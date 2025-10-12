@@ -17,11 +17,16 @@ iptv run      [options]
 
 Create or refresh the **group selection file** used by filtering.
 
-### Flags (minimal)
+### Flags
 
 * `--playlist-url <url>`  (or `--config ... --profile ...`)
-* `--out <path>` (defaults to `./groups.txt`)
+* `--out <path>` (optional). If omitted, groups are written to **stdout** for piping.
 * `--verbose`
+* `--live`
+
+### Note on `--live` flag
+
+- `--live` (optional): when provided, only **live** streams are enumerated (simple heuristics: stream URL contains a `/live/` path segment or `type=live` query). This helps you export a group file that reflects live channels only.
 
 ### Behavior
 
@@ -35,11 +40,12 @@ iptv groups \
   --out ./groups.txt \
   --preserve-comments \
   --verbose
+  --live
 # Edit groups.txt → comment to KEEP, leave bare to DROP
 ```
 
 ```bash
-iptv groups --config /etc/iptv/config.yml --profile default --out /config/groups.txt --verbose
+iptv groups --config /etc/iptv/config.yml --profile default --out /config/groups.txt --verbose --live
 ```
 
 ---
@@ -57,18 +63,25 @@ One-shot pipeline: **fetch → filter → write**.
 * **Filtering**
 
   * `--groups-file <path>` (optional) — text file; one group per line:
-
+  * `--live` (optional) - details in Note
     * **Commented (`#`) = KEEP**
     * **Uncommented = DROP**
 * **Outputs**
 
-  * `--out-playlist <path>` (recommended)
-  * `--out-epg <path>` (required if `--epg-url` provided)
+  * `--out-playlist <path>` (recommended; use `-` for **stdout**)
+  * `--out-epg <path>` (required if `--epg-url` provided; use `-` for **stdout**)
 * **Runtime**
 
   * `--config <path>` (optional)
   * `--profile <name>` (default `default`)
   * `--verbose`
+
+#### Note on `--live`
+
+- `--live` (optional): when provided, only **live** streams are processed (same heuristics as above). This filter is applied **before** reading and applying the groups file.
+#### Note on Stdout behavior
+- If **only a playlist** is being produced and `--out-playlist` is **omitted**, the playlist is written to **stdout**.
+- If an **EPG** is also being produced, at least one of `--out-playlist` or `--out-epg` must be provided; alternatively, pass `--out-playlist -` or `--out-epg -` to write that artifact to **stdout**.
 
 ### Behavior
 
@@ -76,6 +89,7 @@ One-shot pipeline: **fetch → filter → write**.
 2. If a suitable `.env` exists (see Modes of use), substitute `$USER`/`$PASS` **inside URL strings/fields only**.
 3. Fetch playlist (and EPG if provided).
 4. Parse M3U/XMLTV.
+5. if `--live` is provided only stream urls containting `/live/` OR `type=live` are kept, everything else (series/vod) are dropped. 
 5. If `--groups-file` provided: **drop** any groups that are not commented (commented lines are kept).
 6. Write outputs atomically to `--out-playlist`/`--out-epg`.
 7. Log newly discovered groups and summarize channel changes **only for kept groups**.
@@ -90,12 +104,13 @@ iptv run \
   --out-playlist ./out/playlist.m3u \
   --out-epg ./out/epg.xml \
   --verbose
+  --live
 ```
 
 **Config-driven:**
 
 ```bash
-iptv run --config /etc/iptv/config.yml --profile default --verbose
+iptv run --config /etc/iptv/config.yml --profile default --verbose --live
 # If /etc/iptv/.env exists, `$USER` and `$PASS` are substituted only in URL fields.
 ```
 
@@ -124,5 +139,5 @@ iptv run --config /etc/iptv/config.yml --profile default --verbose
 ## Minimal cron example
 
 ```bash
-*/30 * * * * root iptv run --config /etc/iptv/config.yml --profile default
+*/30 * * * * root iptv run --config /etc/iptv/config.yml --profile default --live
 ```
