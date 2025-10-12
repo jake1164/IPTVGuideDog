@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using Microsoft.Extensions.Configuration;
 
 namespace iptv;
@@ -8,14 +7,23 @@ internal class Program
 {
     static int Main(string[] args)
     {
-        if (args.Length == 0)
+        var config = new ConfigurationBuilder()
+            .AddCommandLine(args)
+            .Build();
+
+        var cmd = args.Length > 0 ? args[0].ToLower() : null;
+
+        if (string.IsNullOrEmpty(cmd) || (cmd != "groups" && cmd != "run"))
         {
             PrintUsage();
-            return 2; // config/validation error
+            return 2;
         }
 
-        var cmd = args[0].ToLower();
-        var options = ParseOptions(args);
+        // Remove the command from the args for option parsing
+        var optionArgs = args.Length > 1 ? args[1..] : Array.Empty<string>();
+        var options = new ConfigurationBuilder()
+            .AddCommandLine(optionArgs)
+            .Build();
 
         switch (cmd)
         {
@@ -24,48 +32,73 @@ internal class Program
             case "run":
                 return RunPipeline(options);
             default:
-                Console.Error.WriteLine($"Unknown command: {cmd}");
                 PrintUsage();
                 return 2;
         }
     }
 
-    static Dictionary<string, string> ParseOptions(string[] args)
+    static int RunGroups(IConfiguration options)
     {
-        var opts = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        for (int i = 1; i < args.Length; i++)
-        {
-            if (args[i].StartsWith("--"))
-            {
-                var key = args[i].Substring(2);
-                var value = (i + 1 < args.Length && !args[i + 1].StartsWith("--")) ? args[++i] : "true";
-                opts[key] = value;
-            }
-        }
-        return opts;
-    }
+        var playlistUrl = options["playlist-url"];
+        var configPath = options["config"];
+        var outPath = options["out"]; // <-- Add this line
+        var live = options["live"] != null;
 
-    static int RunGroups(Dictionary<string, string> opts)
-    {
-        // Example: validate required options
-        if (!opts.ContainsKey("playlist-url") && !opts.ContainsKey("config"))
+        if (playlistUrl == null && configPath == null)
         {
             Console.Error.WriteLine("Missing required: --playlist-url or --config");
             return 2;
         }
         Console.WriteLine("Running 'groups' command...");
+        if (live)
+        {
+            Console.WriteLine("  --live flag detected: Only live streams will be enumerated.");
+        }
+        if (outPath == null)
+        {
+            Console.WriteLine("Groups will be written to stdout.");
+        }
+        else
+        {
+            Console.WriteLine($"Groups will be written to: {outPath}");
+        }
         // TODO: Implement actual logic
         return 0;
     }
 
-    static int RunPipeline(Dictionary<string, string> opts)
+    static int RunPipeline(IConfiguration options)
     {
-        if (!opts.ContainsKey("playlist-url") && !opts.ContainsKey("config"))
+        var playlistUrl = options["playlist-url"];
+        var epgUrl = options["epg-url"];
+        var outPlaylist = options["out-playlist"];
+        var outEpg = options["out-epg"];
+
+        // Validate required inputs
+        if (playlistUrl == null && options["config"] == null)
         {
             Console.Error.WriteLine("Missing required: --playlist-url or --config");
             return 2;
         }
+
+        // Validate output requirements
+        if (epgUrl != null && outEpg == null)
+        {
+            Console.Error.WriteLine("Missing required: --out-epg when --epg-url is provided");
+            return 2;
+        }
+        if (epgUrl != null && outPlaylist == null && outEpg == null)
+        {
+            Console.Error.WriteLine("At least one of --out-playlist or --out-epg must be provided when both outputs are needed.");
+            return 2;
+        }
+
         Console.WriteLine("Running 'run' command...");
+        // Output logic
+        if (outPlaylist == null)
+            Console.WriteLine("Playlist will be written to stdout.");
+        if (outEpg == null && epgUrl != null)
+            Console.WriteLine("EPG will be written to stdout.");
+
         // TODO: Implement actual logic
         return 0;
     }
@@ -91,6 +124,7 @@ Options (see cli_spec.md for full details):
   --out-epg <path>
   --epg-url <url>
   --verbose
+  --live           (optional; only live streams are processed)
 ");
     }
 }
