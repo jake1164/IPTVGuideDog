@@ -91,7 +91,7 @@ One-shot pipeline: **fetch → filter → write**.
 ### Behavior
 
 1. If `--config` is present, load profile; then apply any flag overrides.
-2. If a suitable `.env` exists (see Modes of use), substitute `$USER`/`$PASS` **inside URL strings/fields only**.
+2. If a suitable `.env` exists (see Modes of use), substitute `%USER%`/`%PASS%` **inside URL strings/fields only**.
 3. Fetch playlist (and EPG if provided).
 4. Parse M3U/XMLTV.
 5. if `--live` is provided only stream urls containting `/live/` OR `type=live` are kept, everything else (series/vod) are dropped. 
@@ -116,17 +116,30 @@ iptv run \
 
 ```bash
 iptv run --config /etc/iptv/config.yml --profile default --verbose --live
-# If /etc/iptv/.env exists, `$USER` and `$PASS` are substituted only in URL fields.
+# If /etc/iptv/.env exists, `%USER%` and `%PASS%` are substituted only in URL fields.
+```
+
+**Using credentials from .env:**
+
+```powershell
+# PowerShell example
+iptv groups --playlist-url "http://host/get.php?username=%USER%&password=%PASS%&type=m3u_plus&output=ts" --out-groups groups.txt --verbose
+```
+
+```bash
+# Bash/Linux example
+iptv groups --playlist-url "http://host/get.php?username=%USER%&password=%PASS%&type=m3u_plus&output=ts" --out-groups groups.txt --verbose
 ```
 
 ---
 
 ## Environment behavior (strict)
-* **Only** `$USER` and `$PASS` are recognized, and **only** when a `.env` file exists.
-* **Zero-config mode:** if `./.env` exists, `$USER`/`$PASS` are substituted **inside URL strings only** before fetching.
-* **Config mode:** if a `.env` file exists in the **same directory as the `--config` file**, `$USER`/`$PASS` are substituted **inside URL fields only** before fetching.
+* **Only** `%USER%` and `%PASS%` (percent-delimited) are recognized, and **only** when a `.env` file exists.
+* **Zero-config mode:** if `./.env` exists, `%USER%`/`%PASS%` are substituted **inside URL strings only** before fetching.
+* **Config mode:** if a `.env` file exists in the **same directory as the `--config` file**, `%USER%`/`%PASS%` are substituted **inside URL fields only** before fetching.
 * If no `.env` is present, no substitution occurs.
 * Embedding credentials directly in URLs is fully supported.
+* **Shell compatibility:** The `%...%` format works reliably in PowerShell, Bash, CMD, and Zsh without shell expansion.
 
 ---
 
