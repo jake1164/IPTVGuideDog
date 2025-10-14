@@ -1,6 +1,5 @@
 ######  This is a DROP list. Put a '#' in front of any group you want to KEEP. ######
 ######  Lines without '#' will be DROPPED. Blank lines are ignored.              ######
-######  Created with iptv version 0.40                                             ######
 
 #24/7 Cinema+
 #24/7 Concerts & Karaoke
@@ -187,19 +186,3 @@ USA | Unimas Locals
 USA | Univision Locals
 Venezuela
 XXX Adult
-##India 24/7
-##LIVE | EPL
-##LIVE | GAA
-##LIVE | iFollow (Tue)
-##LIVE | MLB (Direct)
-##LIVE | NBA Preseason (Direct)
-##LIVE | NCAA Football (Direct)
-##LIVE | NHL (Direct)
-##LIVE | OHL
-##LIVE | QMJHL
-##LIVE | Rugby
-##LIVE | Selected Live Football (Mon)
-##LIVE | UEFA+
-##LIVE | Victory+
-##LIVE | WHL
-##SPORTS | Bein Sports

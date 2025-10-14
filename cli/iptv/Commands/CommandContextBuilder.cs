@@ -7,7 +7,7 @@ public static class CommandContextBuilder
 {
     private static readonly HashSet<string> GroupsAllowedOptions = new(StringComparer.OrdinalIgnoreCase)
     {
-        "playlist-url", "config", "profile", "out-groups", "verbose", "live"
+        "playlist-url", "config", "profile", "out-groups", "verbose", "live", "force"
     };
     private static readonly HashSet<string> RunAllowedOptions = new(StringComparer.OrdinalIgnoreCase)
     {

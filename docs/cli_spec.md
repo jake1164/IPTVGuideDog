@@ -20,13 +20,18 @@ Create or refresh the **group selection file** used by filtering.
 ### Flags
 
 * `--playlist-url <url>`  (or `--config ... --profile ...`)
-* `--out <path>` (optional). If omitted, groups are written to **stdout** for piping.
+* `--out-groups <path>` (optional). If omitted, groups are written to **stdout** for piping.
 * `--verbose`
 * `--live`
+* `--force` (optional). Override file validation checks (version mismatch, missing headers, etc.)
 
 ### Note on `--live` flag
 
 - `--live` (optional): when provided, only **live** streams are enumerated (simple heuristics: stream URL contains a `/live/` path segment or `type=live` query). This helps you export a group file that reflects live channels only.
+
+### Note on `--force` flag
+
+- `--force` (optional): bypasses file validation checks. Use this to modify groups files created with different versions or files that don't match the expected format. A backup is still created before modification.
 
 ### Behavior
 
@@ -37,7 +42,7 @@ Create or refresh the **group selection file** used by filtering.
 ```bash
 iptv groups \
   --playlist-url "https://host/get.php?username=U&password=P&type=m3u_plus&output=ts" \
-  --out ./groups.txt \
+  --out-groups ./groups.txt \
   --preserve-comments \
   --verbose
   --live
@@ -45,7 +50,7 @@ iptv groups \
 ```
 
 ```bash
-iptv groups --config /etc/iptv/config.yml --profile default --out /config/groups.txt --verbose --live
+iptv groups --config /etc/iptv/config.yml --profile default --out-groups /config/groups.txt --verbose --live
 ```
 
 ---
@@ -140,4 +145,3 @@ iptv run --config /etc/iptv/config.yml --profile default --verbose --live
 
 ```bash
 */30 * * * * root iptv run --config /etc/iptv/config.yml --profile default --live
-```
