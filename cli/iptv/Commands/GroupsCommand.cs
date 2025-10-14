@@ -83,7 +83,7 @@ public sealed class GroupsCommand
         }
 
         var outputLines = TemplateHeader.Concat(groups).ToList();
-        var outPath = context.OutputPath;
+        var outPath = context.GroupsOutputPath;
         if (string.IsNullOrEmpty(outPath) || outPath == "-")
         {
             _console.MarkupLine($"[blue]Displaying {groups.Count} discovered groups:[/]");

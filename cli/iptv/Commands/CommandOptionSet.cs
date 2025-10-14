@@ -9,6 +9,8 @@ public sealed class CommandOptionSet
         _values = values;
     }
 
+    public IEnumerable<string> Keys => _values.Keys;
+
     public bool IsFlagSet(string name)
         => _values.TryGetValue(name, out var list) && list.Count > 0 && list.Last() == CommandOptionParser.FlagPresentValue;
 
