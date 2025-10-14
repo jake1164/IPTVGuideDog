@@ -1,3 +1,4 @@
+using Spectre.Console;
 using Iptv.Cli.IO;
 using Iptv.Cli.M3u;
 using Iptv.Cli.Net;
@@ -18,19 +19,22 @@ public sealed class GroupsCommand
     private readonly TextWriter _diagnostics;
     private readonly HttpClient _httpClient;
     private readonly PlaylistParser _parser;
+    private readonly IAnsiConsole _console;
 
     public GroupsCommand(
         TextWriter stdout,
         TextWriter stderr,
         TextWriter diagnostics,
         HttpClient httpClient,
-        PlaylistParser parser)
+        PlaylistParser parser,
+        IAnsiConsole? console = null)
     {
         _stdout = stdout;
         _stderr = stderr;
         _diagnostics = diagnostics;
         _httpClient = httpClient;
         _parser = parser;
+        _console = console ?? Spectre.Console.AnsiConsole.Console;
     }
 
     public async Task<int> ExecuteAsync(CommandContext context, CancellationToken cancellationToken)
@@ -41,8 +45,15 @@ public sealed class GroupsCommand
         }
 
         var fetcher = new SourceFetcher(_httpClient, _diagnostics);
-        var playlistContent = await fetcher.GetStringAsync(context.PlaylistSource, cancellationToken);
-        var document = _parser.Parse(playlistContent);
+        
+        var playlistContent = await fetcher.GetStringWithProgressAsync(context.PlaylistSource, _console, cancellationToken);
+
+        PlaylistDocument document = null!;
+        await _console.Status()
+            .StartAsync("Parsing playlist...", async ctx =>
+            {
+                document = await Task.Run(() => _parser.Parse(playlistContent), cancellationToken);
+            });
 
         IEnumerable<M3uEntry> entries = document.Entries.Where(e => !string.IsNullOrEmpty(e.Url));
         if (context.LiveOnly)
@@ -51,13 +62,20 @@ public sealed class GroupsCommand
         }
 
         var groups = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var entry in entries)
-        {
-            if (!string.IsNullOrEmpty(entry.Group))
+        await _console.Status()
+            .StartAsync("Extracting groups...", async ctx =>
             {
-                groups.Add(entry.Group);
-            }
-        }
+                await Task.Run(() =>
+                {
+                    foreach (var entry in entries)
+                    {
+                        if (!string.IsNullOrEmpty(entry.Group))
+                        {
+                            groups.Add(entry.Group);
+                        }
+                    }
+                }, cancellationToken);
+            });
 
         if (_diagnostics != TextWriter.Null)
         {
@@ -68,15 +86,16 @@ public sealed class GroupsCommand
         var outPath = context.OutputPath;
         if (string.IsNullOrEmpty(outPath) || outPath == "-")
         {
+            _console.MarkupLine($"[blue]Displaying {groups.Count} discovered groups:[/]");
             foreach (var line in outputLines)
             {
-                await _stdout.WriteLineAsync(line);
+                _console.WriteLine(line);
             }
         }
         else
         {
             await TextFileWriter.WriteAtomicAsync(outPath, outputLines, cancellationToken);
-            await _stdout.WriteLineAsync($"Groups written to {outPath}");
+            _console.MarkupLine($"[green]? {groups.Count} groups written to {outPath}[/]");
         }
 
         return ExitCodes.Success;
