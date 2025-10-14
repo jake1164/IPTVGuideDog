@@ -5,12 +5,31 @@ namespace Iptv.Cli.Commands;
 
 public static class CommandContextBuilder
 {
+    private static readonly HashSet<string> GroupsAllowedOptions = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "playlist-url", "config", "profile", "out-groups", "verbose", "live"
+    };
+    private static readonly HashSet<string> RunAllowedOptions = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "playlist-url", "epg-url", "groups-file", "out-playlist", "out-epg", "config", "profile", "verbose", "live"
+    };
+
     public static async Task<CommandContext> CreateAsync(
         CommandOptionSet options,
         CommandKind kind,
         TextWriter diagnostics,
         CancellationToken cancellationToken)
     {
+        // Validate options
+        var allowed = kind == CommandKind.Groups ? GroupsAllowedOptions : RunAllowedOptions;
+        foreach (var opt in options.Keys)
+        {
+            if (!allowed.Contains(opt))
+            {
+                throw new CommandOptionException($"Unknown or unsupported option '--{opt}' for command '{kind.ToString().ToLowerInvariant()}'");
+            }
+        }
+
         string? configPath = options.GetSingleValue("config");
         ProfileConfig? profile = null;
         string? configDir = null;
@@ -46,7 +65,7 @@ public static class CommandContextBuilder
             ?? profile?.Filters?.GroupsFile
             ?? profile?.Filters?.DropListFile;
 
-        var outputPath = options.GetSingleValue("out");
+        var groupsOutputPath = options.GetSingleValue("out-groups");
         var playlistOutput = options.GetSingleValue("out-playlist") ?? profile?.Output?.PlaylistPath;
         var epgOutput = options.GetSingleValue("out-epg") ?? profile?.Output?.EpgPath;
 
@@ -63,7 +82,7 @@ public static class CommandContextBuilder
             playlistSource,
             epgSource,
             groupsFile,
-            outputPath,
+            groupsOutputPath,
             playlistOutput,
             epgOutput,
             liveOnly,

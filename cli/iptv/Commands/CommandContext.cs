@@ -13,7 +13,7 @@ public sealed class CommandContext
     public string? PlaylistSource { get; }
     public string? EpgSource { get; }
     public string? GroupsFile { get; }
-    public string? OutputPath { get; }
+    public string? GroupsOutputPath { get; } // Renamed from OutputPath
     public string? PlaylistOutputPath { get; }
     public string? EpgOutputPath { get; }
     public bool LiveOnly { get; }
@@ -29,7 +29,7 @@ public sealed class CommandContext
         string? playlistSource,
         string? epgSource,
         string? groupsFile,
-        string? outputPath,
+        string? groupsOutputPath, // Renamed from outputPath
         string? playlistOutputPath,
         string? epgOutputPath,
         bool liveOnly,
@@ -44,7 +44,7 @@ public sealed class CommandContext
         PlaylistSource = playlistSource;
         EpgSource = epgSource;
         GroupsFile = groupsFile;
-        OutputPath = outputPath;
+        GroupsOutputPath = groupsOutputPath;
         PlaylistOutputPath = playlistOutputPath;
         EpgOutputPath = epgOutputPath;
         LiveOnly = liveOnly;
