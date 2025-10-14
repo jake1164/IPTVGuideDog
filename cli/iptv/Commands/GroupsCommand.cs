@@ -95,7 +95,7 @@ public sealed class GroupsCommand
         else
         {
             await TextFileWriter.WriteAtomicAsync(outPath, outputLines, cancellationToken);
-            _console.MarkupLine($"[green]? {groups.Count} groups written to {outPath}[/]");
+            _console.MarkupLine($"[green]{groups.Count} groups written to {outPath}[/]");
         }
 
         return ExitCodes.Success;
