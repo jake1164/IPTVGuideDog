@@ -73,16 +73,20 @@ Backup saved to: groups.txt.bak
 
 ### When Backups Are Created
 Backups are created:
-- **Only when modifying** an existing groups file (after validation passes or with `--force`)
-- **Never created** when validation fails without `--force`
+- **Only when changes are made** to an existing groups file (when new groups are discovered)
+- **After validation passes** (or with `--force`)
+- **Never created** when:
+  - Validation fails without `--force`
+  - No new groups are found (file unchanged)
+  - Creating a new file (no existing file to back up)
 
 ### Backup Naming
 - First backup: `<filename>.bak`
 - Subsequent backups: `<filename>.bak1`, `<filename>.bak2`, etc.
 
-### Backup Cleanup
-- If no changes are made (no new groups), the backup is automatically deleted
-- If changes are made, the backup is kept and its path is displayed
+### Backup Behavior
+- If new groups are found, the backup is created and kept
+- If no new groups are found, no backup is created and a message confirms the file is unchanged
 
 ## Usage Examples
 

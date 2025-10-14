@@ -122,19 +122,16 @@ public sealed class GroupsCommand
                     }
                 }
 
-                // Create backup before modifying
-                var backup = GroupsFileValidator.CreateBackupPath(outPath);
-                await GroupsFileValidator.CreateBackupAsync(outPath, cancellationToken);
-                if (_diagnostics != TextWriter.Null)
-                {
-                    await _diagnostics.WriteLineAsync($"Backup created: {backup}");
-                }
-
                 var result = await MergeWithExistingGroupsFileAsync(outPath, groups, cancellationToken);
-                await TextFileWriter.WriteAtomicAsync(outPath, result.OutputLines, cancellationToken);
                 
                 if (result.NewGroups.Count > 0)
                 {
+                    // Only create backup if we're actually making changes
+                    var backup = GroupsFileValidator.CreateBackupPath(outPath);
+                    await GroupsFileValidator.CreateBackupAsync(outPath, cancellationToken);
+                    
+                    await TextFileWriter.WriteAtomicAsync(outPath, result.OutputLines, cancellationToken);
+                    
                     _console.MarkupLine($"[green]Added {result.NewGroups.Count} new group(s) to {outPath}[/]");
                     _console.MarkupLine($"[dim]Backup saved to: {backup}[/]");
                     _console.MarkupLine("[yellow]New groups found:[/]");
@@ -146,11 +143,6 @@ public sealed class GroupsCommand
                 else
                 {
                     _console.MarkupLine($"[green]No new groups found. File {outPath} unchanged.[/]");
-                    // Delete the backup since nothing changed
-                    if (File.Exists(backup))
-                    {
-                        File.Delete(backup);
-                    }
                 }
             }
             else
