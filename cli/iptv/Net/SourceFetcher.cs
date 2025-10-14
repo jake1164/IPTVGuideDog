@@ -26,18 +26,18 @@ public sealed class SourceFetcher
             {
                 if (_diagnostics != TextWriter.Null)
                 {
-                    await _diagnostics.WriteLineAsync($"Downloading {uri.GetLeftPart(UriPartial.Path)}...");
+                    await _diagnostics.WriteLineAsync($"Downloading {UrlRedactor.RedactUrl(uri)}...");
                 }
 
                 using var response = await _httpClient.GetAsync(uri, cancellationToken);
                 if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized || response.StatusCode == System.Net.HttpStatusCode.Forbidden)
                 {
-                    throw new CliException($"Authentication failed when requesting {uri}", ExitCodes.AuthError);
+                    throw new CliException($"Authentication failed when requesting {UrlRedactor.RedactUrl(uri)}", ExitCodes.AuthError);
                 }
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    throw new CliException($"Request to {uri} failed with status {(int)response.StatusCode}.", ExitCodes.NetworkError);
+                    throw new CliException($"Request to {UrlRedactor.RedactUrl(uri)} failed with status {(int)response.StatusCode}.", ExitCodes.NetworkError);
                 }
 
                 return await response.Content.ReadAsStringAsync(cancellationToken);
@@ -48,11 +48,11 @@ public sealed class SourceFetcher
             }
             catch (TaskCanceledException ex)
             {
-                throw new CliException($"Request to {uri} timed out: {ex.Message}", ExitCodes.NetworkError);
+                throw new CliException($"Request to {UrlRedactor.RedactUrl(uri)} timed out: {ex.Message}", ExitCodes.NetworkError);
             }
             catch (HttpRequestException ex)
             {
-                throw new CliException($"Request to {uri} failed: {ex.Message}", ExitCodes.NetworkError);
+                throw new CliException($"Request to {UrlRedactor.RedactUrl(uri)} failed: {ex.Message}", ExitCodes.NetworkError);
             }
         }
         else
@@ -86,18 +86,18 @@ public sealed class SourceFetcher
             {
                 if (_diagnostics != TextWriter.Null)
                 {
-                    await _diagnostics.WriteLineAsync($"Downloading {uri.GetLeftPart(UriPartial.Path)}...");
+                    await _diagnostics.WriteLineAsync($"Downloading {UrlRedactor.RedactUrl(uri)}...");
                 }
 
                 using var response = await _httpClient.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
                 if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized || response.StatusCode == System.Net.HttpStatusCode.Forbidden)
                 {
-                    throw new CliException($"Authentication failed when requesting {uri}", ExitCodes.AuthError);
+                    throw new CliException($"Authentication failed when requesting {UrlRedactor.RedactUrl(uri)}", ExitCodes.AuthError);
                 }
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    throw new CliException($"Request to {uri} failed with status {(int)response.StatusCode}.", ExitCodes.NetworkError);
+                    throw new CliException($"Request to {UrlRedactor.RedactUrl(uri)} failed with status {(int)response.StatusCode}.", ExitCodes.NetworkError);
                 }
 
                 var total = response.Content.Headers.ContentLength ?? -1L;
@@ -143,11 +143,11 @@ public sealed class SourceFetcher
             }
             catch (TaskCanceledException ex)
             {
-                throw new CliException($"Request to {uri} timed out: {ex.Message}", ExitCodes.NetworkError);
+                throw new CliException($"Request to {UrlRedactor.RedactUrl(uri)} timed out: {ex.Message}", ExitCodes.NetworkError);
             }
             catch (HttpRequestException ex)
             {
-                throw new CliException($"Request to {uri} failed: {ex.Message}", ExitCodes.NetworkError);
+                throw new CliException($"Request to {UrlRedactor.RedactUrl(uri)} failed: {ex.Message}", ExitCodes.NetworkError);
             }
         }
         else
