@@ -11,11 +11,14 @@ public static class TextFileWriter
         }
 
         var tmpPath = Path.Combine(directory ?? Environment.CurrentDirectory, $".{Path.GetFileName(path)}.{Guid.NewGuid():N}.tmp");
-        await using var stream = new FileStream(tmpPath, FileMode.Create, FileAccess.Write, FileShare.None, 4096, useAsync: true);
-        await using var writer = new StreamWriter(stream);
-        foreach (var line in lines)
+        
+        await using (var stream = new FileStream(tmpPath, FileMode.Create, FileAccess.Write, FileShare.None, 4096, useAsync: true))
+        await using (var writer = new StreamWriter(stream))
         {
-            await writer.WriteLineAsync(line.AsMemory(), cancellationToken);
+            foreach (var line in lines)
+            {
+                await writer.WriteLineAsync(line.AsMemory(), cancellationToken);
+            }
         }
 
         File.Move(tmpPath, path, overwrite: true);

@@ -1,3 +1,4 @@
 <Solution>
+  <Project Path="iptv.Tests/iptv.Tests.csproj" />
   <Project Path="iptv/iptv.csproj" />
 </Solution>
