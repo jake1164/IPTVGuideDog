@@ -68,10 +68,10 @@ http://example.com/2";
         
         try
         {
-            // Create existing file with some groups
+            // Create existing file with some groups - use version 0.40 to match current major version
             var existingContent = @"######  This is a DROP list. Put a '#' in front of any group you want to KEEP.  ######
 ######  Lines without '#' will be DROPPED. Blank lines are ignored.             ######
-######  Created with iptv version 1.0 ######
+######  Created with iptv version 0.40 ######
 
 #Sports
 News
@@ -146,7 +146,7 @@ http://example.com/3";
         {
             var existingContent = @"######  This is a DROP list. Put a '#' in front of any group you want to KEEP.  ######
 ######  Lines without '#' will be DROPPED. Blank lines are ignored.             ######
-######  Created with iptv version 1.0 ######
+######  Created with iptv version 0.40 ######
 
 #Sports
 
@@ -210,7 +210,7 @@ http://example.com/2";
         {
             var existingContent = @"######  This is a DROP list. Put a '#' in front of any group you want to KEEP.  ######
 ######  Lines without '#' will be DROPPED. Blank lines are ignored.             ######
-######  Created with iptv version 1.0 ######
+######  Created with iptv version 0.40 ######
 
 #Sports
 News";
@@ -260,7 +260,7 @@ http://example.com/2";
         {
             var existingContent = @"######  This is a DROP list. Put a '#' in front of any group you want to KEEP.  ######
 ######  Lines without '#' will be DROPPED. Blank lines are ignored.             ######
-######  Created with iptv version 1.0 ######
+######  Created with iptv version 0.40 ######
 
 #SPORTS";
             await File.WriteAllTextAsync(tmpFile, existingContent);
