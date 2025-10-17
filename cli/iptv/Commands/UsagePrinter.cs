@@ -23,5 +23,6 @@ public static class UsagePrinter
         stdout.WriteLine("  --out-epg <path>");
         stdout.WriteLine("  --live");
         stdout.WriteLine("  --verbose");
+        stdout.WriteLine("  --force");
     }
 }
