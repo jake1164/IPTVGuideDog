@@ -162,6 +162,7 @@ public class CommandOptionParserTests
             "--playlist-url", "https://provider.com/get.php?username=test&password=secret123",
             "--epg-url", "https://provider.com/epg.xml",
             "--groups-file", "/config/groups.txt",
+            "--out-groups", "/data/groups.txt",
             "--out-playlist", "/data/playlist.m3u",
             "--out-epg", "/data/epg.xml",
             "--live",
@@ -171,6 +172,7 @@ public class CommandOptionParserTests
         Assert.IsTrue(result.GetSingleValue("playlist-url")?.Contains("username=test") ?? false);
         Assert.IsTrue(result.GetSingleValue("epg-url")?.Contains("epg.xml") ?? false);
         Assert.AreEqual("/config/groups.txt", result.GetSingleValue("groups-file"));
+        Assert.AreEqual("/data/groups.txt", result.GetSingleValue("out-groups"));
         Assert.AreEqual("/data/playlist.m3u", result.GetSingleValue("out-playlist"));
         Assert.AreEqual("/data/epg.xml", result.GetSingleValue("out-epg"));
         Assert.IsTrue(result.IsFlagSet("live"));

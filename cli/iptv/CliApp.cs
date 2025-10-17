@@ -38,7 +38,7 @@ public sealed class CliApp
         }
         catch (CommandOptionException ex)
         {
-            await _stderr.WriteLineAsync(ex.Message);
+            await _stderr.WriteLineAsync($"Error: {ex.Message}");
             UsagePrinter.PrintUsage(_stdout);
             return ExitCodes.ConfigError;
         }
@@ -65,6 +65,12 @@ public sealed class CliApp
                     UsagePrinter.PrintUsage(_stdout);
                     return ExitCodes.ConfigError;
             }
+        }
+        catch (CommandOptionException ex)
+        {
+            await _stderr.WriteLineAsync($"Error: {ex.Message}");
+            UsagePrinter.PrintUsage(_stdout);
+            return ExitCodes.ConfigError;
         }
         catch (CliException ex)
         {

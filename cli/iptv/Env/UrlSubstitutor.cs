@@ -2,8 +2,9 @@ namespace Iptv.Cli.Env;
 
 public static class UrlSubstitutor
 {
-    public static string? SubstituteCredentials(string? value, IReadOnlyDictionary<string, string> env)
+    public static string? SubstituteCredentials(string? value, IReadOnlyDictionary<string, string> env, out List<string> replaced)
     {
+        replaced = new List<string>();
         if (string.IsNullOrEmpty(value) || env.Count == 0)
         {
             return value;
@@ -19,8 +20,18 @@ public static class UrlSubstitutor
             }
 
             var upper = kvp.Key.ToUpperInvariant();
-            result = result.Replace($"${upper}", kvp.Value, StringComparison.OrdinalIgnoreCase);
-            result = result.Replace($"${{{upper}}}", kvp.Value, StringComparison.OrdinalIgnoreCase);
+            var lower = kvp.Key.ToLowerInvariant();
+            var before = result;
+            
+            // Replace %USER%, %user%, %PASS%, %pass% (case-insensitive)
+            result = result.Replace($"%{upper}%", kvp.Value, StringComparison.Ordinal);
+            result = result.Replace($"%{lower}%", kvp.Value, StringComparison.Ordinal);
+            
+            // Track if replaced
+            if (!string.Equals(before, result, StringComparison.Ordinal))
+            {
+                replaced.Add(upper);
+            }
         }
 
         return result;

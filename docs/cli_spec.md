@@ -20,13 +20,18 @@ Create or refresh the **group selection file** used by filtering.
 ### Flags
 
 * `--playlist-url <url>`  (or `--config ... --profile ...`)
-* `--out <path>` (optional). If omitted, groups are written to **stdout** for piping.
+* `--out-groups <path>` (optional). If omitted, groups are written to **stdout** for piping.
 * `--verbose`
 * `--live`
+* `--force` (optional). Override file validation checks (version mismatch, missing headers, etc.)
 
 ### Note on `--live` flag
 
 - `--live` (optional): when provided, only **live** streams are enumerated (simple heuristics: stream URL contains a `/live/` path segment or `type=live` query). This helps you export a group file that reflects live channels only.
+
+### Note on `--force` flag
+
+- `--force` (optional): bypasses file validation checks. Use this to modify groups files created with different versions or files that don't match the expected format. A backup is still created before modification.
 
 ### Behavior
 
@@ -37,7 +42,7 @@ Create or refresh the **group selection file** used by filtering.
 ```bash
 iptv groups \
   --playlist-url "https://host/get.php?username=U&password=P&type=m3u_plus&output=ts" \
-  --out ./groups.txt \
+  --out-groups ./groups.txt \
   --preserve-comments \
   --verbose
   --live
@@ -45,7 +50,7 @@ iptv groups \
 ```
 
 ```bash
-iptv groups --config /etc/iptv/config.yml --profile default --out /config/groups.txt --verbose --live
+iptv groups --config /etc/iptv/config.yml --profile default --out-groups /config/groups.txt --verbose --live
 ```
 
 ---
@@ -86,7 +91,7 @@ One-shot pipeline: **fetch → filter → write**.
 ### Behavior
 
 1. If `--config` is present, load profile; then apply any flag overrides.
-2. If a suitable `.env` exists (see Modes of use), substitute `$USER`/`$PASS` **inside URL strings/fields only**.
+2. If a suitable `.env` exists (see Modes of use), substitute `%USER%`/`%PASS%` **inside URL strings/fields only**.
 3. Fetch playlist (and EPG if provided).
 4. Parse M3U/XMLTV.
 5. if `--live` is provided only stream urls containting `/live/` OR `type=live` are kept, everything else (series/vod) are dropped. 
@@ -111,17 +116,30 @@ iptv run \
 
 ```bash
 iptv run --config /etc/iptv/config.yml --profile default --verbose --live
-# If /etc/iptv/.env exists, `$USER` and `$PASS` are substituted only in URL fields.
+# If /etc/iptv/.env exists, `%USER%` and `%PASS%` are substituted only in URL fields.
+```
+
+**Using credentials from .env:**
+
+```powershell
+# PowerShell example
+iptv groups --playlist-url "http://host/get.php?username=%USER%&password=%PASS%&type=m3u_plus&output=ts" --out-groups groups.txt --verbose
+```
+
+```bash
+# Bash/Linux example
+iptv groups --playlist-url "http://host/get.php?username=%USER%&password=%PASS%&type=m3u_plus&output=ts" --out-groups groups.txt --verbose
 ```
 
 ---
 
 ## Environment behavior (strict)
-* **Only** `$USER` and `$PASS` are recognized, and **only** when a `.env` file exists.
-* **Zero-config mode:** if `./.env` exists, `$USER`/`$PASS` are substituted **inside URL strings only** before fetching.
-* **Config mode:** if a `.env` file exists in the **same directory as the `--config` file**, `$USER`/`$PASS` are substituted **inside URL fields only** before fetching.
+* **Only** `%USER%` and `%PASS%` (percent-delimited) are recognized, and **only** when a `.env` file exists.
+* **Zero-config mode:** if `./.env` exists, `%USER%`/`%PASS%` are substituted **inside URL strings only** before fetching.
+* **Config mode:** if a `.env` file exists in the **same directory as the `--config` file**, `%USER%`/`%PASS%` are substituted **inside URL fields only** before fetching.
 * If no `.env` is present, no substitution occurs.
 * Embedding credentials directly in URLs is fully supported.
+* **Shell compatibility:** The `%...%` format works reliably in PowerShell, Bash, CMD, and Zsh without shell expansion.
 
 ---
 
@@ -140,4 +158,3 @@ iptv run --config /etc/iptv/config.yml --profile default --verbose --live
 
 ```bash
 */30 * * * * root iptv run --config /etc/iptv/config.yml --profile default --live
-```

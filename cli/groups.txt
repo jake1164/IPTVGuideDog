@@ -1,0 +1,205 @@
+######  This is a DROP list. Put a '#' in front of any group you want to KEEP. ######
+######  Lines without '#' will be DROPPED. Blank lines are ignored.              ######
+######  Created with iptv version 0.40                                             ######
+
+#24/7 Cinema+
+#24/7 Concerts & Karaoke
+#24/7 Kids/Teens
+#24/7 Movies
+#24/7 TV Series
+Africa
+Albania
+Arabic
+Argentina
+Australia | Locals & News
+Australia | Locals (Test)
+Austria
+Azam (Africa)
+Belgium
+Bolivia
+Brazil
+Bulgaria
+Canada | Entertainment
+Canada | Internationals
+Canada | Kids
+Canada | Locals
+Canada | Movies
+Canada | Music
+Canada | News
+Canada | Sports
+Canada | Sportsnet+
+Canada | TSN+
+Caribbean
+Chile
+Colombia
+Costa Rica
+Croatia
+Czech Republic
+Dominican Republic
+Ecuador
+El Salvador
+EX-YU
+EX-YU Sports
+France
+France (Amazon Prime)
+Germany
+Greece
+Guatemala
+Honduras
+Hungary
+India
+Indonesian
+IRE | Irish Entertainment
+IRE | Irish Sports
+Israel
+Italy
+Japan
+Latin General
+Latin Sports
+LIVE | Amazon (UK)
+LIVE | Bar TV (Aus)
+LIVE | Big Ten Network+ (Live Only)
+LIVE | DAZN (CAN/UK)
+LIVE | DAZN (Live Only)
+#LIVE | Dirtvision (Direct)
+Live | Enterprise National/North/South League
+LIVE | EPL (Sat)
+LIVE | ESPN Play (AUS)
+#LIVE | ESPN Play (USA)
+#LIVE | ESPN+
+#LIVE | ESPN+ (Direct)
+LIVE | FA Player
+#LIVE | FIFA+
+LIVE | Flo Sports (Live Only)
+LIVE | Fubo Sports (Canada)
+LIVE | iFollow (Sat)
+#LIVE | MAX (USA)
+#LIVE | MILB
+#LIVE | MLB Teams
+Live | Monomax (EPL)
+Live | MXGP (Direct)
+#LIVE | NBA (Team Channels)
+#LIVE | NCAA Basketball
+#LIVE | NFL (Direct)
+#LIVE | NHL (Team Channels)
+LIVE | Now Sports Premier League (EPL)
+LIVE | OHL | WHL | QMJHL
+LIVE | One Football (With EPG)
+LIVE | Paramount+ AUS (Live Only)
+#LIVE | Paramount+ USA (Live Events Only)
+LIVE | PDC Darts
+#LIVE | Peacock (Live Events Only)
+LIVE | Poker Go
+#LIVE | Racing (Dirt,Flo)
+#LIVE | Requested Live Events
+LIVE | Rugby (Fri)
+LIVE | Rush/Flow Sports (Carib)
+LIVE | Scottish Football (Fri)
+#LIVE | Selected Live Football (Fri)
+LIVE | Setanta Sports (Live Only)
+LIVE | Sky Sports+
+LIVE | Stan Sports (Aus)
+LIVE | StarHub (EPL)
+#LIVE | Triller TV (Fite)
+#LIVE | UFC Fightpass
+LIVE | Ultimate Pool
+LIVE | ViaPlay (Euro)
+LIVE | Vidio (EPL)
+LIVE | Wrestling (Live Only)
+Malaysia
+Malta
+Mexico
+Netherlands
+New Zealand | Direct (NZ VPN Needed)
+Nicaragua
+Pakistan
+Panama
+Paraguay
+Peru
+Philippines
+Poland
+Portuguese
+#PPV | PPV Events 1
+#PPV | PPV Events 2
+#PPV | PPV Events 3
+#PPV | PPV Events 4
+Puerto Rico
+Radio
+REPLAYS | Bundesliga/La Liga/ Serie A
+REPLAYS | Champions/Europa League
+REPLAYS | EFL & Vanarama League
+REPLAYS | EPL & Scottish Premier League
+REPLAYS | General Sports
+#REPLAYS | NFL/NBA/NHL
+Romania
+Russia
+Scandinavia
+Scandinavia Live Events
+South Africa (DSTV)
+Spain
+SPORTS | AUS Sports
+SPORTS | Bein Sports (Test)
+SPORTS | Cricket
+SPORTS | ESPN/Sky Sports NZ
+#SPORTS | Golf
+#SPORTS | Horse Racing & Betting
+SPORTS | Malaysia
+#SPORTS | Motor Racing
+SPORTS | Now Sports (Hong Kong)
+SPORTS | SuperSport (SA)
+SPORTS | Tennis (UK Times)
+Switzerland
+Test
+Turkey
+UK | Documentary
+UK | Entertainment
+UK | Internationals
+UK | Kids
+UK | Movies
+UK | Music
+UK | News
+UK | Plus 1
+UK | Regionals
+UK | Sky Sports
+UK | Sky Store
+UK | Sports
+UK | TNT Sports
+Uruguay
+#USA | ABC Locals
+USA | Big Brother (Direct)
+#USA | CBS Locals
+#USA | CW Locals
+#USA | Entertainment
+#USA | FOX Locals
+USA | Galavision Locals
+USA | Internationals
+#USA | Kids
+#USA | Movies
+USA | Music Choice
+#USA | MY Locals
+#USA | NBC Locals
+#USA | News
+#USA | Outdoors
+#USA | PBS Locals
+#USA | Sports
+USA | Telemundo Locals
+USA | Unimas Locals
+USA | Univision Locals
+Venezuela
+XXX Adult
+##India 24/7
+##LIVE | EPL
+##LIVE | GAA
+##LIVE | iFollow (Tue)
+##LIVE | MLB (Direct)
+##LIVE | NBA Preseason (Direct)
+##LIVE | NCAA Football (Direct)
+##LIVE | NHL (Direct)
+##LIVE | OHL
+##LIVE | QMJHL
+##LIVE | Rugby
+##LIVE | Selected Live Football (Mon)
+##LIVE | UEFA+
+##LIVE | Victory+
+##LIVE | WHL
+##SPORTS | Bein Sports
