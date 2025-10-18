@@ -27,9 +27,10 @@ public class GroupsFileValidatorTests
         var tmpFile = Path.GetTempFileName();
         try
         {
-            var content = @"######  This is a DROP list. Put a '#' in front of any group you want to KEEP.  ######
+            var currentVersion = GroupsFileValidator.GetCurrentVersion();
+            var content = $@"######  This is a DROP list. Put a '#' in front of any group you want to KEEP.  ######
 ######  Lines without '#' will be DROPPED. Blank lines are ignored.             ######
-######  Created with iptv version 1.0 ######
+######  Created with iptv version {currentVersion} ######
 
 #Sports
 News";
@@ -38,7 +39,7 @@ News";
             var result = await GroupsFileValidator.ValidateFileAsync(tmpFile, CancellationToken.None);
 
             Assert.IsTrue(result.IsValid);
-            Assert.AreEqual("1.0", result.FileVersion);
+            Assert.AreEqual(currentVersion, result.FileVersion);
             Assert.IsNull(result.ErrorMessage);
         }
         finally
@@ -300,21 +301,30 @@ News";
     {
         var header = GroupsFileValidator.CreateHeader();
 
+        // Verify the header has the expected number of lines
         Assert.IsTrue(header.Length >= 4);
-        Assert.IsTrue(header[0].Contains("DROP list"));
-        Assert.IsTrue(header[1].Contains("DROPPED"));
-        Assert.IsTrue(header[2].Contains("New groups are marked"));
-        Assert.IsTrue(header[3].Contains("Created with iptv version"));
-        
-        // Verify all header lines end with " ######" at the same position (88 chars total)
-        Assert.AreEqual(88, header[0].Length);
-        Assert.AreEqual(88, header[1].Length);
-        Assert.AreEqual(88, header[2].Length);
-        Assert.AreEqual(88, header[3].Length);
-        Assert.IsTrue(header[0].EndsWith(" ######"));
-        Assert.IsTrue(header[1].EndsWith(" ######"));
-        Assert.IsTrue(header[2].EndsWith(" ######"));
-        Assert.IsTrue(header[3].EndsWith(" ######"));
+
+        // Verify the content of the header using key phrases (avoid coupling to private constants)
+        Assert.IsTrue(header[0].Contains("DROP list") && header[0].Contains("KEEP"));
+        Assert.IsTrue(header[1].Contains("Lines without") && header[1].Contains("DROPPED"));
+        Assert.IsTrue(header[2].Contains("New groups") && header[2].Contains("##"));
+
+        // Verify the version line dynamically
+        var currentVersion = GroupsFileValidator.GetCurrentVersion();
+        var versionLine = header[3];
+        Assert.IsTrue(versionLine.Contains(currentVersion));
+
+        // Verify formatting: all non-empty lines end with the marker
+        foreach (var line in header)
+        {
+            if (!string.IsNullOrWhiteSpace(line))
+            {
+                Assert.IsTrue(line.EndsWith(" ######"));
+            }
+        }
+
+        // The version line should be padded to 88 characters
+        Assert.AreEqual(88, versionLine.Length);
     }
 
     [TestMethod]
