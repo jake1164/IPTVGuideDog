@@ -29,8 +29,8 @@ public sealed class EndpointConfig
 
 public sealed class FiltersConfig
 {
-    public IReadOnlyList<string>? IncludeGroups { get; init; }
-    public IReadOnlyList<string>? ExcludeGroups { get; init; }
+    public List<string>? IncludeGroups { get; init; }
+    public List<string>? ExcludeGroups { get; init; }
     public string? DropListFile { get; init; }
     public string? GroupsFile { get; init; }
 }
