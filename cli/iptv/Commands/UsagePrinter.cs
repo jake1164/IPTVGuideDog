@@ -18,7 +18,7 @@ public static class UsagePrinter
         stdout.WriteLine("  --config <path>");
         stdout.WriteLine("  --profile <name>");
         stdout.WriteLine("  --groups-file <path>");
-        stdout.WriteLine("  --out <path>");
+        stdout.WriteLine("  --out-groups <path>");
         stdout.WriteLine("  --out-playlist <path>");
         stdout.WriteLine("  --out-epg <path>");
         stdout.WriteLine("  --live");

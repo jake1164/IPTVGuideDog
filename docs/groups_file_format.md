@@ -92,7 +92,7 @@ Backups are created:
 
 ### Creating a New Groups File
 ```bash
-iptv groups --playlist-url https://provider.com/playlist.m3u --out groups.txt
+iptv groups --playlist-url https://provider.com/playlist.m3u --out-groups groups.txt
 ```
 
 Creates `groups.txt` with:
@@ -101,7 +101,7 @@ Creates `groups.txt` with:
 
 ### Updating an Existing Groups File
 ```bash
-iptv groups --playlist-url https://provider.com/playlist.m3u --out groups.txt
+iptv groups --playlist-url https://provider.com/playlist.m3u --out-groups groups.txt
 ```
 
 If `groups.txt` exists:
@@ -137,7 +137,7 @@ News
 
 ### No New Groups
 ```bash
-iptv groups --playlist-url https://provider.com/playlist.m3u --out groups.txt
+iptv groups --playlist-url https://provider.com/playlist.m3u --out-groups groups.txt
 ```
 
 Output:
