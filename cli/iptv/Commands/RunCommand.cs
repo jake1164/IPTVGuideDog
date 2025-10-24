@@ -229,18 +229,29 @@ public sealed class RunCommand
         }
 
         var selectedEntries = new List<M3uEntry>();
+        var keepSet = groupSelection.Keep;
+        var allSet = groupSelection.All;
+        var pendingSet = groupSelection.PendingReview;
         var droppedMissingGroup = 0;
         var droppedExcluded = 0;
 
         foreach (var entry in entries)
         {
-            if (string.IsNullOrWhiteSpace(entry.Group))
+            var group = entry.Group;
+
+            if (string.IsNullOrWhiteSpace(group))
             {
                 droppedMissingGroup++;
                 continue;
             }
 
-            if (!groupSelection.Keep.Contains(entry.Group))
+            if (pendingSet.Contains(group))
+            {
+                droppedExcluded++;
+                continue;
+            }
+
+            if (allSet.Contains(group) && !keepSet.Contains(group))
             {
                 droppedExcluded++;
                 continue;

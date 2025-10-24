@@ -265,7 +265,10 @@ def main() -> int:
     legacy_cmd.extend(["--drop-file", str(drop_file)])
 
     type_filter_key = baseline_cfg.get("typeFilterEnv", "TYPE_FILTER")
+    type_filter_default = baseline_cfg.get("typeFilterDefault")
     type_filter_value = os.environ.get(type_filter_key)
+    if (not type_filter_value or not type_filter_value.strip()) and type_filter_default:
+        type_filter_value = str(type_filter_default).strip()
     if type_filter_value:
         legacy_cmd.extend(["--type", type_filter_value])
 
