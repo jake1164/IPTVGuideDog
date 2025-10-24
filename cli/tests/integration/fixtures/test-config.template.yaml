@@ -1,0 +1,43 @@
+profiles:
+  default:
+    inputs:
+      playlist:
+        url: "{{WORKSPACE}}/cli/tests/integration/data/sample.m3u"
+        headers:
+          User-Agent: "iptv-test-suite"
+        timeoutSeconds: 10
+        retries: 1
+        maxDownloadMb: 8
+      epg:
+        url: "{{WORKSPACE}}/cli/tests/integration/data/sample.epg.xml"
+        allowCompressed: true
+    filters:
+      dropListFile: "{{DROP_FILE}}"
+      includeGroups:
+        - "USA | News"
+        - "USA | Sports"
+      excludeGroups:
+        - "International"
+    output:
+      playlistPath: "{{OUTPUT_ROOT}}/config/default-playlist.m3u"
+      epgPath: "{{OUTPUT_ROOT}}/config/default-epg.xml"
+      atomicWrites: true
+      gzip: false
+      tmpDir: "{{OUTPUT_ROOT}}/tmp"
+
+  override:
+    inputs:
+      playlist:
+        url: "{{WORKSPACE}}/cli/tests/integration/data/sample.m3u"
+    filters:
+      groupsFile: "{{DROP_FILE}}"
+    output:
+      playlistPath: "{{OUTPUT_ROOT}}/config/override-playlist.m3u"
+      epgPath: "{{OUTPUT_ROOT}}/config/override-epg.xml"
+
+  groups:
+    inputs:
+      playlist:
+        url: "{{WORKSPACE}}/cli/tests/integration/data/sample.m3u"
+    filters:
+      groupsFile: "{{DROP_FILE}}"

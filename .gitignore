@@ -64,3 +64,12 @@ TestResults/
 # Groups files (contains user preferences and may be large)
 groups.txt
 groups.txt.bak*
+
+# Local provider configuration (contains private URLs)
+cli/config.yaml
+
+# Local git hooks (may carry private urls)
+.githooks/pre-commit
+
+# Integration artifacts
+test-output/

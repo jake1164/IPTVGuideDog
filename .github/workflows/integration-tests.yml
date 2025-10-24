@@ -1,0 +1,21 @@
+name: Integration Tests
+
+on:
+  workflow_dispatch:
+
+jobs:
+  integration:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build integration image
+        run: docker build -t iptv-cli-integration -f cli/tests/integration/Dockerfile .
+
+      - name: Run integration suite (sample data)
+        run: |
+          docker run --rm \
+            -e DOTNET_CONFIGURATION=Release \
+            -v "${PWD}:/workspace" \
+            iptv-cli-integration
