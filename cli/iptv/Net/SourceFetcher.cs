@@ -105,31 +105,35 @@ public sealed class SourceFetcher
                 using var ms = new MemoryStream();
                 var buffer = new byte[8192];
                 long read = 0;
-                
+
                 string result = string.Empty;
                 await console.Progress()
                     .AutoClear(true)
-                    .Columns(
-                        new TaskDescriptionColumn(),
-                        new ProgressBarColumn(),
-                        new PercentageColumn(),
-                        new DownloadedColumn(),
-                        new TransferSpeedColumn())
+                    .Columns(CreateColumns(total))
                     .StartAsync(async ctx =>
                     {
-                        var task = ctx.AddTask("Downloading", maxValue: total > 0 ? total : 100);
+                        var task = ctx.AddTask("Downloading", maxValue: total > 0 ? total : double.MaxValue);
+                        if (total <= 0)
+                        {
+                            task.IsIndeterminate = true;
+                            task.Description = "Downloading (0 B)";
+                        }
+
                         int bytesRead;
-                        while ((bytesRead = await stream.ReadAsync(buffer, cancellationToken)) > 0)
+                        while ((bytesRead = await stream.ReadAsync(buffer.AsMemory(0, buffer.Length), cancellationToken)) > 0)
                         {
                             ms.Write(buffer, 0, bytesRead);
                             read += bytesRead;
-                            if (total > 0) 
+
+                            task.Increment(bytesRead);
+
+                            if (total > 0)
                             {
                                 task.Value = read;
                             }
-                            else 
+                            else
                             {
-                                task.IsIndeterminate = true;
+                                task.Description = $"Downloading ({FormatBytes(read)})";
                             }
                         }
                         task.StopTask();
@@ -165,5 +169,45 @@ public sealed class SourceFetcher
                 throw new CliException($"Failed to read file {source}: {ex.Message}", ExitCodes.IoError);
             }
         }
+    }
+
+    private static ProgressColumn[] CreateColumns(long total)
+    {
+        if (total > 0)
+        {
+            return
+            [
+                new TaskDescriptionColumn(),
+                new ProgressBarColumn(),
+                new PercentageColumn(),
+                new DownloadedColumn(),
+                new TransferSpeedColumn()
+            ];
+        }
+
+        return
+        [
+            new TaskDescriptionColumn(),
+            new SpinnerColumn(),
+            new TransferSpeedColumn()
+        ];
+    }
+
+    private static string FormatBytes(long bytes)
+    {
+        if (bytes < 1024)
+        {
+            return $"{bytes} B";
+        }
+
+        string[] units = ["KB", "MB", "GB", "TB"];
+        double value = bytes;
+        var unitIndex = 0;
+        while (value >= 1024 && unitIndex < units.Length - 1)
+        {
+            value /= 1024;
+            unitIndex++;
+        }
+        return $"{value:0.##} {units[unitIndex]}";
     }
 }
