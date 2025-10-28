@@ -1,5 +1,8 @@
 <Solution>
-  <Project Path="src/Shared/IPTVGuideDog.Domain.csproj" />
-  <Project Path="src/SocketHost/IPTVGuideDog.SocketHost.csproj" />
-  <Project Path="src/Web/IPTVGuideDog.Web.csproj" />
+  <Project Path="src\IPTVGuideDog.Core\IPTVGuideDog.Core.csproj" />
+  <Project Path="src\IPTVGuideDog.Cli\IPTVGuideDog.Cli.csproj" />
+  <Project Path="src\IPTVGuideDog.Web\IPTVGuideDog.Web.csproj" />
+  <Project Path="src\IPTVGuideDog.SocketHost\IPTVGuideDog.SocketHost.csproj" />
+  <Project Path="tests\IPTVGuideDog.Cli.Tests\IPTVGuideDog.Cli.Tests.csproj" />
 </Solution>
+

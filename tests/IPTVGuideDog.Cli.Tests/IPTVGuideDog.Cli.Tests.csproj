@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <IsTestProject>true</IsTestProject>
+    <EnableMSTestRunner>true</EnableMSTestRunner>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="MSTest" Version="3.7.1" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\IPTVGuideDog.Cli\IPTVGuideDog.Cli.csproj" />
+    <ProjectReference Include="..\..\src\IPTVGuideDog.Core\IPTVGuideDog.Core.csproj" />
+  </ItemGroup>
+</Project>
