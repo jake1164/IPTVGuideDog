@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="src/Shared/IPTVGuideDog.Domain.csproj" />
+  <Project Path="src/SocketHost/IPTVGuideDog.SocketHost.csproj" />
+  <Project Path="src/Web/IPTVGuideDog.Web.csproj" />
+</Solution>

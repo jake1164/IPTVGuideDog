@@ -1,0 +1,56 @@
+@using Microsoft.AspNetCore.Components.Routing
+
+<MudNavMenu>
+    <MudNavLink Href="" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Home" OnClick="HandleNavClick">Overview</MudNavLink>
+    <MudNavLink Href="channels" Icon="@Icons.Material.Filled.ViewList" OnClick="HandleNavClick">Channel Filters</MudNavLink>
+    <MudNavLink Href="setup" Icon="@Icons.Material.Filled.Settings" OnClick="HandleNavClick">Socket Host</MudNavLink>
+    <MudNavLink Href="auth" Icon="@Icons.Material.Filled.Lock" OnClick="HandleNavClick">Auth Required</MudNavLink>
+</MudNavMenu>
+
+<MudDivider Class="my-4" />
+
+<AuthorizeView>
+    <Authorized>
+        <MudNavMenu>
+            <MudNavLink Href="Account/Manage" Icon="@Icons.Material.Filled.Person" OnClick="HandleNavClick">@context.User.Identity?.Name</MudNavLink>
+        </MudNavMenu>
+        <form action="Account/Logout" method="post" class="mt-2">
+            <AntiforgeryToken />
+            <input type="hidden" name="ReturnUrl" value="@_currentPath" />
+            <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Text" Color="Color.Error" StartIcon="@Icons.Material.Filled.Logout" OnClick="HandleNavClick">
+                Logout
+            </MudButton>
+        </form>
+    </Authorized>
+    <NotAuthorized>
+        <MudNavMenu>
+            <MudNavLink Href="Account/Register" Icon="@Icons.Material.Filled.PersonAdd" OnClick="HandleNavClick">Register</MudNavLink>
+            <MudNavLink Href="Account/Login" Icon="@Icons.Material.Filled.Login" OnClick="HandleNavClick">Login</MudNavLink>
+        </MudNavMenu>
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+    [Parameter]
+    public EventCallback OnNavigate { get; set; }
+
+    [Inject]
+    private NavigationManager NavigationManager { get; set; } = default!;
+
+    private string _currentPath = string.Empty;
+
+    protected override void OnInitialized()
+    {
+        _currentPath = NavigationManager.ToBaseRelativePath(NavigationManager.Uri);
+    }
+
+    private Task HandleNavClick(MouseEventArgs _)
+    {
+        if (OnNavigate.HasDelegate)
+        {
+            return OnNavigate.InvokeAsync();
+        }
+
+        return Task.CompletedTask;
+    }
+}
