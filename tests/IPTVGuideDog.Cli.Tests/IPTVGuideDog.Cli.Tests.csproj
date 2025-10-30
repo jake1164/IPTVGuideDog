@@ -5,7 +5,7 @@
     <EnableMSTestRunner>true</EnableMSTestRunner>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="MSTest" Version="3.7.1" />
+    <PackageReference Include="MSTest" Version="4.0.1" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\IPTVGuideDog.Cli\IPTVGuideDog.Cli.csproj" />
