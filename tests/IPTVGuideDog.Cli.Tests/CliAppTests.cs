@@ -136,15 +136,29 @@ public class CliAppTests
         var stderr = new StringWriter();
         var app = new CliApp(stdout, stderr);
 
-        // Should parse the option names correctly (even if command fails for other reasons)
-        var result = await app.RunAsync(new[] 
-        { 
-            "run",
-            "--playlist-url", "http://test",
-            "--out-playlist", "-"
-        });
+        // Create a temporary test file to avoid network requests
+        var tempFile = Path.GetTempFileName();
+        try
+        {
+            await File.WriteAllTextAsync(tempFile, "#EXTM3U\n#EXTINF:-1,Test\nhttp://test/stream");
 
-        // Should fail for network/other reasons, not parsing
-        Assert.AreNotEqual(ExitCodes.ConfigError, result);
+            // Should parse the option names correctly
+            var result = await app.RunAsync(new[] 
+            { 
+                "run",
+                "--playlist-url", tempFile,
+                "--out-playlist", "-"
+            });
+
+            // Test should succeed since we have a valid playlist file
+            Assert.AreEqual(ExitCodes.Success, result);
+        }
+        finally
+        {
+            if (File.Exists(tempFile))
+            {
+                File.Delete(tempFile);
+            }
+        }
     }
 }

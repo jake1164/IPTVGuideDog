@@ -120,31 +120,31 @@ public class CommandOptionParserTests
     }
 
     [TestMethod]
-    [ExpectedException(typeof(CommandOptionException))]
     public void Parse_TokenWithoutDashes_ThrowsException()
     {
-        CommandOptionParser.Parse(new[] { "invalid" });
+        Assert.ThrowsException<CommandOptionException>(() => 
+            CommandOptionParser.Parse(new[] { "invalid" }));
     }
 
     [TestMethod]
-    [ExpectedException(typeof(CommandOptionException))]
     public void Parse_TokenWithSingleDash_ThrowsException()
     {
-        CommandOptionParser.Parse(new[] { "-v" });
+        Assert.ThrowsException<CommandOptionException>(() => 
+     CommandOptionParser.Parse(new[] { "-v" }));
     }
 
-    [TestMethod]
-    [ExpectedException(typeof(CommandOptionException))]
-    public void Parse_EmptyOptionName_ThrowsException()
+[TestMethod]
+public void Parse_EmptyOptionName_ThrowsException()
     {
-        CommandOptionParser.Parse(new[] { "--", "value" });
+      Assert.ThrowsException<CommandOptionException>(() => 
+            CommandOptionParser.Parse(new[] { "--", "value" }));
     }
 
     [TestMethod]
-    [ExpectedException(typeof(CommandOptionException))]
     public void Parse_EmptyOptionNameWithEquals_ThrowsException()
-    {
-        CommandOptionParser.Parse(new[] { "--=value" });
+ {
+        Assert.ThrowsException<CommandOptionException>(() => 
+            CommandOptionParser.Parse(new[] { "--=value" }));
     }
 
     [TestMethod]

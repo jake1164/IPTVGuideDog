@@ -123,10 +123,10 @@ public class CommandOptionParserEdgeCasesTests
     }
 
     [TestMethod]
-    [ExpectedException(typeof(CommandOptionException))]
     public void Parse_OnlyDashes_ThrowsException()
     {
-        CommandOptionParser.Parse(new[] { "--" });
+        Assert.ThrowsException<CommandOptionException>(() => 
+              CommandOptionParser.Parse(new[] { "--" }));
     }
 
     [TestMethod]
