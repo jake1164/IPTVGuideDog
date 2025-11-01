@@ -2,6 +2,7 @@ using Spectre.Console;
 using IPTVGuideDog.Core.IO;
 using IPTVGuideDog.Core.M3u;
 using IPTVGuideDog.Core.Net;
+using IPTVGuideDog.Core;
 
 namespace IPTVGuideDog.Cli.Commands;
 
@@ -44,7 +45,7 @@ public sealed class GroupsCommand
         await _console.Status()
             .StartAsync("Parsing playlist...", async ctx =>
             {
-                document = await Task.Run(() => _parser.Parse(playlistContent), cancellationToken);
+                document = await Task.Run(() => _parser.Parse(playlistContent, cancellationToken), cancellationToken);
             });
 
         IEnumerable<M3uEntry> entries = document.Entries.Where(e => !string.IsNullOrEmpty(e.Url));

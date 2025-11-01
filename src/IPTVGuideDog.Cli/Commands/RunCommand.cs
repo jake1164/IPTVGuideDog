@@ -4,6 +4,7 @@ using Spectre.Console;
 using IPTVGuideDog.Core.IO;
 using IPTVGuideDog.Core.M3u;
 using IPTVGuideDog.Core.Net;
+using IPTVGuideDog.Core;
 
 namespace IPTVGuideDog.Cli.Commands;
 
@@ -142,14 +143,14 @@ public sealed class RunCommand
     {
         if (!interactive)
         {
-            return _parser.Parse(content);
+            return _parser.Parse(content, cancellationToken);
         }
 
         PlaylistDocument document = null!;
         await _console.Status()
             .StartAsync("Parsing playlist...", async _ =>
             {
-                document = await Task.Run(() => _parser.Parse(content), cancellationToken);
+                document = await Task.Run(() => _parser.Parse(content, cancellationToken), cancellationToken);
             });
         return document;
     }

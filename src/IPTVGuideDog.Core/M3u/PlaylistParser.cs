@@ -2,13 +2,13 @@ namespace IPTVGuideDog.Core.M3u;
 
 public sealed class PlaylistParser
 {
-    public PlaylistDocument Parse(string content)
+    public PlaylistDocument Parse(string content, CancellationToken cancellationToken = default)
     {
         if (content is null)
         {
             throw new CliException("Playlist content was null.", ExitCodes.ParseError);
         }
-
+        cancellationToken.ThrowIfCancellationRequested();
         var lines = SplitLines(content);
         var preamble = new List<string>();
         var entries = new List<M3uEntry>();
@@ -19,6 +19,9 @@ public sealed class PlaylistParser
             var line = lines[index];
             if (line.StartsWith("#EXTINF", StringComparison.OrdinalIgnoreCase))
             {
+                if (index % 100 == 0) 
+                    cancellationToken.ThrowIfCancellationRequested();
+                
                 var metadata = new List<string> { line };
                 index++;
 

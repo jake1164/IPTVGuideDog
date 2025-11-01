@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using IPTVGuideDog.Cli;
+using IPTVGuideDog.Core;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace IPTVGuideDog.Cli.Tests;

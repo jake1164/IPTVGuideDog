@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using IPTVGuideDog.Cli;
 using IPTVGuideDog.Cli.Commands;
+using IPTVGuideDog.Core;
 using IPTVGuideDog.Core.IO;
 using IPTVGuideDog.Core.M3u;
 using Microsoft.VisualStudio.TestTools.UnitTesting;

@@ -1,17 +1,20 @@
 using IPTVGuideDog.Cli.Commands;
+using IPTVGuideDog.Core;
 using IPTVGuideDog.Core.Configuration;
 using IPTVGuideDog.Core.Env;
 using IPTVGuideDog.Core.IO;
 using IPTVGuideDog.Core.M3u;
 using IPTVGuideDog.Core.Net;
+using System.Runtime.CompilerServices;
 
 namespace IPTVGuideDog.Cli;
 
-public sealed class CliApp
+public sealed class CliApp : IDisposable
 {
     private readonly TextWriter _stdout;
     private readonly TextWriter _stderr;
     private readonly HttpClient _httpClient;
+    private bool _disposed;
 
     public CliApp(TextWriter stdout, TextWriter stderr)
     {
@@ -20,8 +23,18 @@ public sealed class CliApp
         _httpClient = HttpClientFactory.CreateDefault();
     }
 
+    public void Dispose()
+    {
+        if(!_disposed)
+        {
+            _httpClient.Dispose();
+            _disposed = true;
+        }
+    }
+
     public async Task<int> RunAsync(string[] args, CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(args);
         if (args.Length == 0)
         {
             UsagePrinter.PrintUsage(_stdout);
@@ -29,7 +42,7 @@ public sealed class CliApp
         }
 
         var commandName = args[0].ToLowerInvariant();
-        var optionArgs = args.Skip(1).ToArray();
+        var optionArgs = args[1..]; // span-based slice starting at index 1 to end of array
 
         CommandOptionSet options;
         try
@@ -76,6 +89,20 @@ public sealed class CliApp
         {
             await _stderr.WriteLineAsync(ex.Message);
             return ex.ExitCode;
+        }
+        catch (OperationCanceledException)
+        {
+            await _stderr.WriteLineAsync("Operation canceled.");
+            return ExitCodes.OtherError;
+        }
+        catch (Exception ex)
+        {
+            await _stderr.WriteLineAsync($"Unexpected error: {ex}");
+            if (diagnostics != TextWriter.Null)
+            {
+                await diagnostics.WriteLineAsync($"Stack Trace: {ex}");
+            }
+            return ExitCodes.OtherError;
         }
     }
 }
