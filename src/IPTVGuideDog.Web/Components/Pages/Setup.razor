@@ -1,11 +1,11 @@
 @page "/setup"
 @using IPTVGuideDog.Web.Configuration
-@inject Microsoft.Extensions.Options.IOptionsSnapshot<SocketHostOptions> Options
+@inject Microsoft.Extensions.Options.IOptionsSnapshot<ApiOptions> Options
 
-<PageTitle>Socket Host</PageTitle>
+<PageTitle>API</PageTitle>
 
 <MudPaper Class="pa-6" Elevation="1">
-    <MudText Typo="Typo.h5" Class="mb-2">Socket Host Configuration</MudText>
+    <MudText Typo="Typo.h5" Class="mb-2">API Configuration</MudText>
     <MudText Typo="Typo.body2">Confirm the playlist bridge endpoint exposed to Threadfin, Jellyfin, Plex, and other consumers.</MudText>
 </MudPaper>
 
@@ -21,3 +21,4 @@
         Editing and persistence will be added in a future iteration. Set values via configuration for now.
     </MudAlert>
 </MudPaper>
+

@@ -4,12 +4,12 @@ using Microsoft.Extensions.Options;
 
 namespace IPTVGuideDog.Web.Infrastructure;
 
-internal sealed class SocketHostChannelCatalog : IChannelCatalog
+internal sealed class ApiChannelCatalog : IChannelCatalog
 {
     private readonly HttpClient _httpClient;
-    private readonly IOptions<SocketHostOptions> _options;
+    private readonly IOptions<ApiOptions> _options;
 
-    public SocketHostChannelCatalog(HttpClient httpClient, IOptions<SocketHostOptions> options)
+    public ApiChannelCatalog(HttpClient httpClient, IOptions<ApiOptions> options)
     {
         _httpClient = httpClient;
         _options = options;
@@ -17,7 +17,7 @@ internal sealed class SocketHostChannelCatalog : IChannelCatalog
 
     public Task<IReadOnlyCollection<ChannelGroup>> GetGroupsAsync(CancellationToken cancellationToken = default)
     {
-        // TODO: Replace with call to the socket host discovery endpoint.
+        // TODO: Replace with call to the API discovery endpoint.
         IReadOnlyCollection<ChannelGroup> groups = Array.Empty<ChannelGroup>();
         return Task.FromResult(groups);
     }
@@ -28,3 +28,4 @@ internal sealed class SocketHostChannelCatalog : IChannelCatalog
         return AsyncEnumerable.Empty<ChannelDescriptor>();
     }
 }
+

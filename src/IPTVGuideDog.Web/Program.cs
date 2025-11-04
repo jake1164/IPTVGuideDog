@@ -1,10 +1,10 @@
+using IPTVGuideDog.Web.Configuration;
+using IPTVGuideDog.Web.Infrastructure;
+using IPTVGuideDog.Core.Channels;
+using IPTVGuideDog.Web.Application;
 using IPTVGuideDog.Web.Components;
 using IPTVGuideDog.Web.Components.Account;
 using IPTVGuideDog.Web.Data;
-using IPTVGuideDog.Core.Channels;
-using IPTVGuideDog.Web.Application;
-using IPTVGuideDog.Web.Configuration;
-using IPTVGuideDog.Web.Infrastructure;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -46,13 +46,13 @@ builder.Services.AddIdentityCore<ApplicationUser>(options =>
 builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
 builder.Services.AddMudServices();
 
-builder.Services.AddOptions<SocketHostOptions>()
+builder.Services.AddOptions<ApiOptions>()
     .BindConfiguration("SocketHost")
     .ValidateDataAnnotations();
 
-builder.Services.AddHttpClient<IChannelCatalog, SocketHostChannelCatalog>((sp, client) =>
+builder.Services.AddHttpClient<IChannelCatalog, ApiChannelCatalog>((sp, client) =>
 {
-    var options = sp.GetRequiredService<IOptions<SocketHostOptions>>().Value;
+    var options = sp.GetRequiredService<IOptions<ApiOptions>>().Value;
     if (!string.IsNullOrWhiteSpace(options.BaseAddress) && Uri.TryCreate(options.BaseAddress, UriKind.Absolute, out var baseUri))
     {
         client.BaseAddress = baseUri;
@@ -85,3 +85,4 @@ app.MapRazorComponents<App>()
 app.MapAdditionalIdentityEndpoints();
 
 app.Run();
+

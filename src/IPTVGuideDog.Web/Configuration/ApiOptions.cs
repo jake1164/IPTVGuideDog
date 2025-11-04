@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace IPTVGuideDog.Web.Configuration;
 
-public sealed class SocketHostOptions
+public sealed class ApiOptions
 {
     [Required]
     [Url]
