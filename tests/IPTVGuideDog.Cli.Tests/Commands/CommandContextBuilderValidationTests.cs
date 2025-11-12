@@ -19,7 +19,7 @@ public class CommandContextBuilderValidationTests
             { "playlist-url", new List<string>{ "http://test" } },
             { "out", new List<string>{ "groups.txt" } } // invalid for groups
         });
-        await Assert.ThrowsExceptionAsync<CommandOptionException>(async () =>
+        await Assert.ThrowsAsync<CommandOptionException>(async () =>
         {
             await CommandContextBuilder.CreateAsync(options, CommandKind.Groups, TextWriter.Null, CancellationToken.None);
         });
@@ -33,7 +33,7 @@ public class CommandContextBuilderValidationTests
             { "playlist-url", new List<string>{ "http://test" } },
             { "out-groups", new List<string>{ "groups.txt" } } // invalid for run
         });
-        await Assert.ThrowsExceptionAsync<CommandOptionException>(async () =>
+        await Assert.ThrowsAsync<CommandOptionException>(async () =>
         {
             await CommandContextBuilder.CreateAsync(options, CommandKind.Run, TextWriter.Null, CancellationToken.None);
         });

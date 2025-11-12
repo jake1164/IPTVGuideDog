@@ -14,6 +14,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace IPTVGuideDog.Cli.Tests.Commands;
 
 [TestClass]
+[DoNotParallelize]
 public class GroupsCommandTests
 {
     [TestMethod]
@@ -49,8 +50,8 @@ http://example.com/2";
             
             var lines = await File.ReadAllLinesAsync(tmpFile);
             Assert.IsTrue(lines.Length > 3); // Header + groups
-            Assert.IsTrue(lines.Contains("News"));
-            Assert.IsTrue(lines.Contains("Sports"));
+            CollectionAssert.Contains(lines, "News");
+            CollectionAssert.Contains(lines, "Sports");
         }
         finally
         {
@@ -105,12 +106,12 @@ http://example.com/3";
             var lines = await File.ReadAllLinesAsync(tmpFile);
             
             // Existing groups should still be there
-            Assert.IsTrue(lines.Contains("#Sports"));
-            Assert.IsTrue(lines.Contains("News"));
-            Assert.IsTrue(lines.Contains("Entertainment"));
+            CollectionAssert.Contains(lines, "#Sports");
+            CollectionAssert.Contains(lines, "News");
+            CollectionAssert.Contains(lines, "Entertainment");
             
             // New group should be added with ## prefix
-            Assert.IsTrue(lines.Contains("##Movies"));
+            CollectionAssert.Contains(lines, "##Movies");
             
             // Should not duplicate existing groups
             var sportsCount = lines.Count(line => 
@@ -183,7 +184,7 @@ http://example.com/2";
             Assert.IsTrue(lines.Any(line => string.IsNullOrWhiteSpace(line)));
             
             // Should add new group with ## prefix
-            Assert.IsTrue(lines.Contains("##Movies"));
+            CollectionAssert.Contains(lines, "##Movies");
             
             // Cleanup backup
             var backupPath = $"{tmpFile}.bak";
@@ -350,7 +351,7 @@ http://example.com/1";
             
             // File should NOT have been modified (still has invalid content)
             var fileContent = await File.ReadAllTextAsync(tmpFile);
-            Assert.IsTrue(fileContent.Contains("This is not a groups file"));
+            StringAssert.Contains(fileContent, "This is not a groups file");
             
             // No backup should have been created since we didn't modify
             var backupPath = $"{tmpFile}.bak";
@@ -403,7 +404,7 @@ http://example.com/1";
             
             // File should NOT have been modified (still has version 99.0)
             var fileContent = await File.ReadAllTextAsync(tmpFile);
-            Assert.IsTrue(fileContent.Contains("version 99.0"));
+            StringAssert.Contains(fileContent, "version 99.0");
             
             // No backup should have been created since we didn't modify
             var backupPath = $"{tmpFile}.bak";
@@ -457,7 +458,7 @@ http://example.com/2";
             
             // File should be modified with new groups
             var lines = await File.ReadAllLinesAsync(tmpFile);
-            Assert.IsTrue(lines.Any(l => l.StartsWith("##Movies")));
+            CollectionAssert.Contains(lines, "##Movies");
             
             // Backup should have been created
             var backupPath = $"{tmpFile}.bak";
@@ -515,7 +516,7 @@ http://example.com/2";
             
             // File should be modified with new groups
             var lines = await File.ReadAllLinesAsync(tmpFile);
-            Assert.IsTrue(lines.Any(l => l.StartsWith("##Movies")));
+            CollectionAssert.Contains(lines, "##Movies");
             
             // Backup should have been created
             var backupPath = $"{tmpFile}.bak";

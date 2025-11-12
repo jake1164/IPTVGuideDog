@@ -81,7 +81,7 @@ public class CommandOptionParserTests
         });
         
         var values = result.GetValues("group").ToList();
-        Assert.AreEqual(3, values.Count);
+        Assert.HasCount(3, values);
         CollectionAssert.Contains(values, "News");
         CollectionAssert.Contains(values, "Sports");
         CollectionAssert.Contains(values, "Movies");
@@ -122,28 +122,28 @@ public class CommandOptionParserTests
     [TestMethod]
     public void Parse_TokenWithoutDashes_ThrowsException()
     {
-        Assert.ThrowsException<CommandOptionException>(() => 
+        Assert.Throws<CommandOptionException>(() => 
             CommandOptionParser.Parse(new[] { "invalid" }));
     }
 
     [TestMethod]
     public void Parse_TokenWithSingleDash_ThrowsException()
     {
-        Assert.ThrowsException<CommandOptionException>(() => 
+        Assert.Throws<CommandOptionException>(() => 
      CommandOptionParser.Parse(new[] { "-v" }));
     }
 
 [TestMethod]
 public void Parse_EmptyOptionName_ThrowsException()
     {
-      Assert.ThrowsException<CommandOptionException>(() => 
+      Assert.Throws<CommandOptionException>(() => 
             CommandOptionParser.Parse(new[] { "--", "value" }));
     }
 
     [TestMethod]
     public void Parse_EmptyOptionNameWithEquals_ThrowsException()
  {
-        Assert.ThrowsException<CommandOptionException>(() => 
+        Assert.Throws<CommandOptionException>(() => 
             CommandOptionParser.Parse(new[] { "--=value" }));
     }
 
@@ -169,8 +169,8 @@ public void Parse_EmptyOptionName_ThrowsException()
             "--verbose"
         });
 
-        Assert.IsTrue(result.GetSingleValue("playlist-url")?.Contains("username=test") ?? false);
-        Assert.IsTrue(result.GetSingleValue("epg-url")?.Contains("epg.xml") ?? false);
+        Assert.Contains("username=test", result.GetSingleValue("playlist-url") ?? "");
+        Assert.Contains("epg.xml", result.GetSingleValue("epg-url") ?? "");
         Assert.AreEqual("/config/groups.txt", result.GetSingleValue("groups-file"));
         Assert.AreEqual("/data/groups.txt", result.GetSingleValue("out-groups"));
         Assert.AreEqual("/data/playlist.m3u", result.GetSingleValue("out-playlist"));

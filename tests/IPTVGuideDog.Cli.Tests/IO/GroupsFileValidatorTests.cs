@@ -65,7 +65,7 @@ Just some random content";
 
             Assert.IsFalse(result.IsValid);
             Assert.IsNotNull(result.ErrorMessage);
-            Assert.IsTrue(result.ErrorMessage.Contains("missing header"));
+            StringAssert.Contains(result.ErrorMessage, "missing header");
         }
         finally
         {
@@ -94,7 +94,7 @@ Just some random content";
             Assert.IsFalse(result.IsValid);
             Assert.AreEqual("99.0", result.FileVersion);
             Assert.IsNotNull(result.ErrorMessage);
-            Assert.IsTrue(result.ErrorMessage.Contains("major version mismatch"));
+            StringAssert.Contains(result.ErrorMessage, "major version mismatch");
         }
         finally
         {
@@ -155,7 +155,7 @@ News";
             Assert.IsFalse(result.IsValid);
             Assert.IsNull(result.FileVersion);
             Assert.IsNotNull(result.ErrorMessage);
-            Assert.IsTrue(result.ErrorMessage.Contains("does not contain version information"));
+            StringAssert.Contains(result.ErrorMessage, "does not contain version information");
         }
         finally
         {
@@ -305,21 +305,24 @@ News";
         Assert.IsTrue(header.Length >= 4);
 
         // Verify the content of the header using key phrases (avoid coupling to private constants)
-        Assert.IsTrue(header[0].Contains("DROP list") && header[0].Contains("KEEP"));
-        Assert.IsTrue(header[1].Contains("Lines without") && header[1].Contains("DROPPED"));
-        Assert.IsTrue(header[2].Contains("New groups") && header[2].Contains("##"));
+        StringAssert.Contains(header[0], "DROP list");
+        StringAssert.Contains(header[0], "KEEP");
+        StringAssert.Contains(header[1], "Lines without");
+        StringAssert.Contains(header[1], "DROPPED");
+        StringAssert.Contains(header[2], "New groups");
+        StringAssert.Contains(header[2], "##");
 
         // Verify the version line dynamically
         var currentVersion = GroupsFileValidator.GetCurrentVersion();
         var versionLine = header[3];
-        Assert.IsTrue(versionLine.Contains(currentVersion));
+        StringAssert.Contains(versionLine, currentVersion);
 
         // Verify formatting: all non-empty lines end with the marker
         foreach (var line in header)
         {
             if (!string.IsNullOrWhiteSpace(line))
             {
-                Assert.IsTrue(line.EndsWith(" ######"));
+                StringAssert.EndsWith(line, " ######");
             }
         }
 
@@ -335,7 +338,7 @@ News";
 
         var versionLine = Array.Find(header, l => l.Contains("Created with iptv version"));
         Assert.IsNotNull(versionLine);
-        Assert.IsTrue(versionLine.Contains(currentVersion));
+        StringAssert.Contains(versionLine, currentVersion);
     }
 
     [TestMethod]
@@ -344,7 +347,7 @@ News";
         var version = GroupsFileValidator.GetCurrentVersion();
 
         Assert.IsFalse(string.IsNullOrEmpty(version));
-        Assert.IsTrue(version.Contains("."));
+        StringAssert.Contains(version, ".");
         
         var parts = version.Split('.');
         Assert.AreEqual(2, parts.Length);

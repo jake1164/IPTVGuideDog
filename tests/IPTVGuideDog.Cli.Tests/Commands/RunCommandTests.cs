@@ -14,6 +14,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace IPTVGuideDog.Cli.Tests.Commands;
 
 [TestClass]
+[DoNotParallelize]
 public class RunCommandTests
 {
     [TestMethod]
@@ -21,7 +22,7 @@ public class RunCommandTests
     {
         var cmd = CreateRunCommand();
         var context = new CommandContext(CommandKind.Run, new CommandOptionSet(new Dictionary<string, List<string>>()), null, null, null, new Dictionary<string, string>(), null, null, null, null, null, null, false, false);
-        await Assert.ThrowsExceptionAsync<CliException>(() => cmd.ExecuteAsync(context, CancellationToken.None));
+        await Assert.ThrowsAsync<CliException>(() => cmd.ExecuteAsync(context, CancellationToken.None));
     }
 
     [TestMethod]
@@ -29,7 +30,7 @@ public class RunCommandTests
     {
         var cmd = CreateRunCommand();
         var context = new CommandContext(CommandKind.Run, new CommandOptionSet(new Dictionary<string, List<string>>()), null, null, null, new Dictionary<string, string>(), "playlist", "epg", null, null, null, null, false, false);
-        await Assert.ThrowsExceptionAsync<CliException>(() => cmd.ExecuteAsync(context, CancellationToken.None));
+        await Assert.ThrowsAsync<CliException>(() => cmd.ExecuteAsync(context, CancellationToken.None));
     }
 
     [TestMethod]
@@ -43,7 +44,7 @@ public class RunCommandTests
         var cmd = new RunCommand(stdout, stderr, diagnostics, httpClient, parser);
         var context = new CommandContext(CommandKind.Run, new CommandOptionSet(new Dictionary<string, List<string>>()), null, null, null, new Dictionary<string, string>(), "http://test", null, null, null, null, null, false, false);
         var result = await cmd.ExecuteAsync(context, CancellationToken.None);
-        Assert.IsTrue(stderr.ToString().Contains("Warning: no channels matched"));
+        Assert.Contains("Warning: no channels matched", stderr.ToString());
         Assert.AreEqual(0, result);
     }
 
@@ -54,8 +55,8 @@ public class RunCommandTests
         var cmd = CreateRunCommand(stdout);
         var doc = new PlaylistDocument(new List<string>{"#EXTM3U"}, new List<M3uEntry>{ new M3uEntry(new List<string>{"#EXTINF:-1,Test"}, "http://url") });
         await (Task)cmd.GetType().GetMethod("WritePlaylistAsync", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!
-            .Invoke(cmd, new object[]{ doc, doc.Entries, null, CancellationToken.None })!;
-        Assert.IsTrue(stdout.ToString().Contains("#EXTM3U"));
+            .Invoke(cmd, new object?[]{ doc, doc.Entries, null, CancellationToken.None })!;
+        Assert.Contains("#EXTM3U", stdout.ToString());
     }
 
     [TestMethod]
@@ -64,8 +65,23 @@ public class RunCommandTests
         var stdout = new StringWriter();
         var cmd = CreateRunCommand(stdout);
         await (Task)cmd.GetType().GetMethod("WriteEpgAsync", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!
-            .Invoke(cmd, new object[]{ "<xml>epg</xml>", null, CancellationToken.None })!;
-        Assert.IsTrue(stdout.ToString().Contains("<xml>epg</xml>"));
+            .Invoke(cmd, new object?[]{ "<xml>epg</xml>", null, CancellationToken.None })!;
+        Assert.Contains("<xml>epg</xml>", stdout.ToString());
+    }
+
+    [TestMethod]
+    public async Task ExecuteAsync_ValidatesGroupsFile_WhenProvided()
+    {
+        var stdout = new StringWriter();
+        var stderr = new StringWriter();
+        var diagnostics = new StringWriter();
+        var httpClient = new HttpClient(new MockHttpMessageHandler("#EXTM3U\n"));
+        var parser = new PlaylistParser();
+        var cmd = new RunCommand(stdout, stderr, diagnostics, httpClient, parser);
+        var context = new CommandContext(CommandKind.Run, new CommandOptionSet(new Dictionary<string, List<string>>()), null, null, null, new Dictionary<string, string>(), "http://test", null, "invalidGroupsFile.txt", null, null, null, false, false);
+        
+        var exception = await Assert.ThrowsAsync<CliException>(() => cmd.ExecuteAsync(context, CancellationToken.None));
+        Assert.Contains("invalidGroupsFile.txt", exception.Message);
     }
 
     private static RunCommand CreateRunCommand(StringWriter? stdout = null)

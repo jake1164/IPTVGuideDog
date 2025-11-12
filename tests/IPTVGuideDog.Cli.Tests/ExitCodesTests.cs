@@ -4,6 +4,9 @@ using IPTVGuideDog.Cli;
 using IPTVGuideDog.Core;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
+// Suppress MSTEST0032 for this file - we intentionally test constant values as documentation
+#pragma warning disable MSTEST0032
+
 namespace IPTVGuideDog.Cli.Tests;
 
 [TestClass]
@@ -38,7 +41,7 @@ public class ExitCodesTests
         };
 
         var uniqueCodes = codes.Distinct().ToList();
-        Assert.AreEqual(codes.Length, uniqueCodes.Count, "All exit codes should be unique");
+        Assert.HasCount(codes.Length, uniqueCodes, "All exit codes should be unique");
     }
 
     [TestMethod]
@@ -71,3 +74,5 @@ public class ExitCodesTests
         Assert.AreEqual(6, ExitCodes.ParseError);
     }
 }
+
+#pragma warning restore MSTEST0032

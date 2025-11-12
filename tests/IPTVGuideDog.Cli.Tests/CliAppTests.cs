@@ -21,7 +21,7 @@ public class CliAppTests
             var result = await app.RunAsync(Array.Empty<string>());
 
             Assert.AreEqual(ExitCodes.ConfigError, result);
-            Assert.IsTrue(stdout.ToString().Contains("Usage:"));
+            StringAssert.Contains(stdout.ToString(), "Usage:");
         }
     }
 
@@ -35,7 +35,7 @@ public class CliAppTests
             var result = await app.RunAsync(new[] { "unknown" });
 
             Assert.AreEqual(ExitCodes.ConfigError, result);
-            Assert.IsTrue(stdout.ToString().Contains("Usage:"));
+            StringAssert.Contains(stdout.ToString(), "Usage:");
         }
     }
 
@@ -49,8 +49,8 @@ public class CliAppTests
             var result = await app.RunAsync(new[] { "run", "invalid-token" });
 
             Assert.AreEqual(ExitCodes.ConfigError, result);
-            Assert.IsTrue(stderr.ToString().Contains("Unexpected token"));
-            Assert.IsTrue(stdout.ToString().Contains("Usage:"));
+            StringAssert.Contains(stderr.ToString(), "Unexpected token");
+            StringAssert.Contains(stdout.ToString(), "Usage:");
         }
     }
 
@@ -135,7 +135,7 @@ public class CliAppTests
             var result = await app.RunAsync(new[] { "run", "bad1", "bad2" });
 
             Assert.AreEqual(ExitCodes.ConfigError, result);
-            Assert.IsTrue(stderr.ToString().Contains("Unexpected token 'bad1'"));
+            StringAssert.Contains(stderr.ToString(), "Unexpected token 'bad1'");
         }
     }
 

@@ -125,7 +125,7 @@ public class CommandOptionParserEdgeCasesTests
     [TestMethod]
     public void Parse_OnlyDashes_ThrowsException()
     {
-        Assert.ThrowsException<CommandOptionException>(() => 
+        Assert.Throws<CommandOptionException>(() => 
               CommandOptionParser.Parse(new[] { "--" }));
     }
 
@@ -143,7 +143,7 @@ public class CommandOptionParserEdgeCasesTests
         var result = CommandOptionParser.Parse(new[] { "--verbose", "--verbose", "--verbose" });
         Assert.IsTrue(result.IsFlagSet("verbose"));
         var values = result.GetValues("verbose").ToList();
-        Assert.AreEqual(3, values.Count);
+        Assert.HasCount(3, values);
         Assert.IsTrue(values.All(v => v == "true"));
     }
 
