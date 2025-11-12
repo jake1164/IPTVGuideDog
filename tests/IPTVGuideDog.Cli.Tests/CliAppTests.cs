@@ -64,7 +64,7 @@ public class CliAppTests
             var result = await app.RunAsync(new[] { "groups" });
 
             Assert.AreNotEqual(ExitCodes.Success, result);
-            Assert.IsTrue(stderr.ToString().Length > 0);
+            Assert.IsGreaterThan(0, stderr.ToString().Length);
         }
     }
 
@@ -78,7 +78,7 @@ public class CliAppTests
             var result = await app.RunAsync(new[] { "run" });
 
             Assert.AreNotEqual(ExitCodes.Success, result);
-            Assert.IsTrue(stderr.ToString().Length > 0);
+            Assert.IsGreaterThan(0, stderr.ToString().Length);
         }
     }
 

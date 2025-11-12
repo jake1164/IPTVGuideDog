@@ -49,7 +49,7 @@ http://example.com/2";
             Assert.IsTrue(File.Exists(tmpFile));
             
             var lines = await File.ReadAllLinesAsync(tmpFile);
-            Assert.IsTrue(lines.Length > 3); // Header + groups
+            Assert.IsGreaterThan(3, lines.Length); // Header + groups
             CollectionAssert.Contains(lines, "News");
             CollectionAssert.Contains(lines, "Sports");
         }

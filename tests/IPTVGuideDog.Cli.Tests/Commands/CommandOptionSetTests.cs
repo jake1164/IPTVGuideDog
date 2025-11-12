@@ -123,7 +123,7 @@ public class CommandOptionSetTests
         var options = new CommandOptionSet(values);
         
         var result = options.GetValues("group").ToList();
-        Assert.AreEqual(3, result.Count);
+        Assert.HasCount(3, result);
         CollectionAssert.AreEqual(new[] { "News", "Sports", "Movies" }, result);
     }
 
@@ -134,7 +134,7 @@ public class CommandOptionSetTests
         var options = new CommandOptionSet(values);
         
         var result = options.GetValues("group").ToList();
-        Assert.AreEqual(0, result.Count);
+        Assert.IsEmpty(result);
     }
 
     [TestMethod]
@@ -151,7 +151,7 @@ public class CommandOptionSetTests
         var options = new CommandOptionSet(values);
         
         var result = options.GetValues("flags").ToList();
-        Assert.AreEqual(2, result.Count);
+        Assert.HasCount(2, result);
         Assert.IsTrue(result.All(v => v == "true"));
     }
 

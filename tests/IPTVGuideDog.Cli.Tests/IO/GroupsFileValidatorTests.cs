@@ -301,8 +301,8 @@ News";
     {
         var header = GroupsFileValidator.CreateHeader();
 
-        // Verify the header has the expected number of lines
-        Assert.IsTrue(header.Length >= 4);
+        // Verify the header has the expected number of lines (5: 3 header lines + version line + empty line)
+        Assert.IsGreaterThanOrEqualTo(header.Length, 5);
 
         // Verify the content of the header using key phrases (avoid coupling to private constants)
         StringAssert.Contains(header[0], "DROP list");
@@ -350,7 +350,7 @@ News";
         StringAssert.Contains(version, ".");
         
         var parts = version.Split('.');
-        Assert.AreEqual(2, parts.Length);
+        Assert.HasCount(2, parts);
         Assert.IsTrue(int.TryParse(parts[0], out _));
         Assert.IsTrue(int.TryParse(parts[1], out _));
     }
