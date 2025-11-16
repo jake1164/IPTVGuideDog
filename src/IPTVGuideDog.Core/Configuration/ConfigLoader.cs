@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
@@ -33,6 +34,8 @@ public static class ConfigLoader
         return (profile, configDir);
     }
 
+    [UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode", 
+        Justification = "ParseYaml is only called for YAML files. Users are informed via attributes that JSON is the trim-compatible format.")]
     private static IptvConfig ParseConfiguration(string configPath, string rawText)
     {
         return IsYaml(configPath, rawText)
@@ -40,6 +43,8 @@ public static class ConfigLoader
             : ParseJson(rawText);
     }
 
+    [RequiresUnreferencedCode("YAML deserialization uses reflection and is not trim-compatible. Consider using JSON configuration instead.")]
+    [RequiresDynamicCode("YAML deserialization may require dynamic code generation.")]
     private static IptvConfig ParseYaml(string yaml)
     {
         var deserializer = new DeserializerBuilder()

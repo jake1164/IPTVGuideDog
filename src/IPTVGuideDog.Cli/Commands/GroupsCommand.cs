@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Spectre.Console;
 using IPTVGuideDog.Core.IO;
 using IPTVGuideDog.Core.M3u;
@@ -31,6 +32,8 @@ public sealed class GroupsCommand
         _console = console ?? Spectre.Console.AnsiConsole.Console;
     }
 
+    [RequiresUnreferencedCode("Command execution may use configuration loading with YAML which requires reflection.")]
+    [RequiresDynamicCode("Command execution may use configuration loading with YAML which may require dynamic code generation.")]
     public async Task<int> ExecuteAsync(CommandContext context, CancellationToken cancellationToken)
     {
         if (string.IsNullOrEmpty(context.PlaylistSource))

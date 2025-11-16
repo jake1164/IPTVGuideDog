@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using IPTVGuideDog.Cli.Commands;
 using IPTVGuideDog.Core;
 using IPTVGuideDog.Core.Configuration;
@@ -32,6 +33,8 @@ public sealed class CliApp : IDisposable
         }
     }
 
+    [RequiresUnreferencedCode("Application may use YAML configuration which requires reflection and is not trim-compatible. Use JSON configuration for trim-compatible operation.")]
+    [RequiresDynamicCode("Application may use YAML configuration which may require dynamic code generation. Use JSON configuration for AOT-compatible operation.")]
     public async Task<int> RunAsync(string[] args, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(args);

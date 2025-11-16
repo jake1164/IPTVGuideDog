@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using IPTVGuideDog.Core.Configuration;
 using IPTVGuideDog.Core.Env;
 
@@ -14,6 +15,8 @@ public static class CommandContextBuilder
         "playlist-url", "epg-url", "groups-file", "out-playlist", "out-epg", "config", "profile", "verbose", "live"
     };
 
+    [RequiresUnreferencedCode("Configuration loading may use YAML which requires reflection and is not trim-compatible.")]
+    [RequiresDynamicCode("Configuration loading may use YAML which may require dynamic code generation.")]
     public static async Task<CommandContext> CreateAsync(
         CommandOptionSet options,
         CommandKind kind,

@@ -1,14 +1,14 @@
 <Project>
   <PropertyGroup>
     <!-- Central version management for all projects -->
-    <Version>0.40.1</Version>
-    <AssemblyVersion>0.40.1.0</AssemblyVersion>
-    <FileVersion>0.40.1.0</FileVersion>
+    <Version>0.40.2</Version>
+    <AssemblyVersion>0.40.2.0</AssemblyVersion>
+    <FileVersion>0.40.2.0</FileVersion>
     
     <!-- Optional: Additional metadata -->
     <Company>IPTVGuideDog</Company>
     <Product>IPTVGuideDog</Product>
-    <Copyright>Copyright © $(Company) $([System.DateTime]::Now.Year)</Copyright>
+    <Copyright>Copyright Â© $(Company) $([System.DateTime]::Now.Year)</Copyright>
     <Authors>IPTVGuideDog Contributors</Authors>
     
     <!-- Optional: Build information -->

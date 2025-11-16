@@ -73,3 +73,7 @@ cli/config.yaml
 
 # Integration artifacts
 test-output/
+
+# Publish output directories
+publish/
+!publish/.gitkeep

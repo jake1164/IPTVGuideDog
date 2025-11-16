@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
 using Spectre.Console;
@@ -35,6 +36,8 @@ public sealed class RunCommand
         _console = console ?? Spectre.Console.AnsiConsole.Console;
     }
 
+    [RequiresUnreferencedCode("Command execution may use configuration loading with YAML which requires reflection.")]
+    [RequiresDynamicCode("Command execution may use configuration loading with YAML which may require dynamic code generation.")]
     public async Task<int> ExecuteAsync(CommandContext context, CancellationToken cancellationToken)
     {
         if (string.IsNullOrEmpty(context.PlaylistSource))

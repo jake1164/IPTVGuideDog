@@ -7,6 +7,7 @@ public static class UsagePrinter
         stdout.WriteLine("Usage:");
         stdout.WriteLine("  iptv groups   [options]");
         stdout.WriteLine("  iptv run      [options]");
+        stdout.WriteLine("  iptv --version | -v");
         stdout.WriteLine();
         stdout.WriteLine("Commands:");
         stdout.WriteLine("  groups    Create or refresh the group selection file.");
@@ -24,5 +25,6 @@ public static class UsagePrinter
         stdout.WriteLine("  --live");
         stdout.WriteLine("  --verbose");
         stdout.WriteLine("  --force");
+        stdout.WriteLine("  --version, -v   Show version information and exit.");
     }
 }

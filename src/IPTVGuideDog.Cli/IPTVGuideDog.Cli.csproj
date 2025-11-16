@@ -5,6 +5,7 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <AssemblyName>iptv</AssemblyName>
     <!-- Version properties now inherited from Directory.Build.props -->
   </PropertyGroup>
 
@@ -15,6 +16,9 @@
     <PublishTrimmed>true</PublishTrimmed>
     <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <!-- Suppress IL2104 from YamlDotNet: We knowingly support YAML via reflection.
+         Users are informed via code attributes that JSON is the trim-compatible alternative. -->
+    <NoWarn>$(NoWarn);IL2104</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
