@@ -152,6 +152,49 @@ alias iptv="dotnet run --project src/IPTVGuideDog.Cli --"
 
 ---
 
+### **Publishing as a Single Binary**
+
+For easier distribution, you can publish the CLI as a self-contained single executable that includes the .NET runtime. Users won't need to have .NET installed on their machines.
+
+#### **Publish Commands**
+
+**For Windows (x64):**
+```bash
+dotnet publish src/IPTVGuideDog.Cli/IPTVGuideDog.Cli.csproj -c Release -r win-x64 -o ./publish/win-x64
+```
+
+**For Linux (x64):**
+```bash
+dotnet publish src/IPTVGuideDog.Cli/IPTVGuideDog.Cli.csproj -c Release -r linux-x64 -o ./publish/linux-x64
+```
+
+**For macOS (Intel):**
+```bash
+dotnet publish src/IPTVGuideDog.Cli/IPTVGuideDog.Cli.csproj -c Release -r osx-x64 -o ./publish/osx-x64
+```
+
+**For macOS (Apple Silicon):**
+```bash
+dotnet publish src/IPTVGuideDog.Cli/IPTVGuideDog.Cli.csproj -c Release -r osx-arm64 -o ./publish/osx-arm64
+```
+
+The single executable will be located in the specified output directory (e.g., `./publish/win-x64/`). The binary is:
+- ✅ **Self-contained** — includes the .NET runtime
+- ✅ **Single file** — one executable, no dependencies
+- ✅ **Trimmed & compressed** — optimized for size
+- ✅ **Ready to distribute** — just copy and run
+
+You can then run the executable directly:
+```bash
+# Windows
+./publish/win-x64/IPTVGuideDog.Cli.exe --help
+
+# Linux/macOS
+./publish/linux-x64/IPTVGuideDog.Cli --help
+```
+
+---
+
 ### **Quick Start: 3-Step Workflow**
 
 #### **Step 1: Create a `.env` file** (optional, for credential security)
@@ -250,7 +293,8 @@ Keep your playlist fresh automatically:
 - **[CLI Commands & Usage](docs/cli_spec.md)** — Full command reference
 - **[Config Schema](docs/config_spec.md)** — YAML/JSON config structure  
 - **[Environment Variables](docs/env_usage.md)** — `.env` file usage guide  
-- **[Groups File Format](docs/groups_file_format.md)** — File format specification  
+- **[Groups File Format](docs/groups_file_format.md)** — File format specification
+- **[Version Management](docs/version_management.md)** — How to manage build versions
 
 ---
 

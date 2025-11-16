@@ -4,12 +4,17 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <Version>0.40.0</Version>
+    <!-- Version property now inherited from Directory.Build.props -->
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Spectre.Console" Version="0.54.0" />
     <PackageReference Include="YamlDotNet" Version="16.3.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Preserve YamlDotNet types during trimming since it uses reflection -->
+    <TrimmerRootAssembly Include="YamlDotNet" />
   </ItemGroup>
 
 </Project>

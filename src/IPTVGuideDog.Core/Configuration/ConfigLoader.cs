@@ -62,12 +62,7 @@ public static class ConfigLoader
     {
         try
         {
-            var config = JsonSerializer.Deserialize<IptvConfig>(json, new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true,
-                ReadCommentHandling = JsonCommentHandling.Skip,
-            });
-
+            var config = JsonSerializer.Deserialize(json, IptvConfigJsonContext.Default.IptvConfig);
             return NormalizeConfig(config);
         }
         catch (Exception ex)

@@ -1,0 +1,18 @@
+<Project>
+  <PropertyGroup>
+    <!-- Central version management for all projects -->
+    <Version>0.40.1</Version>
+    <AssemblyVersion>0.40.1.0</AssemblyVersion>
+    <FileVersion>0.40.1.0</FileVersion>
+    
+    <!-- Optional: Additional metadata -->
+    <Company>IPTVGuideDog</Company>
+    <Product>IPTVGuideDog</Product>
+    <Copyright>Copyright © $(Company) $([System.DateTime]::Now.Year)</Copyright>
+    <Authors>IPTVGuideDog Contributors</Authors>
+    
+    <!-- Optional: Build information -->
+    <RepositoryUrl>https://github.com/jake1164/IPTVGuideDog</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+  </PropertyGroup>
+</Project>

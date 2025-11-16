@@ -1,4 +1,24 @@
+using System.Text.Json;
+using System.Text.Json.Serialization;
+
 namespace IPTVGuideDog.Core.Configuration;
+
+[JsonSourceGenerationOptions(
+    PropertyNameCaseInsensitive = true,
+    ReadCommentHandling = JsonCommentHandling.Skip,
+    DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull)]
+[JsonSerializable(typeof(IptvConfig))]
+[JsonSerializable(typeof(ProfileConfig))]
+[JsonSerializable(typeof(InputsConfig))]
+[JsonSerializable(typeof(EndpointConfig))]
+[JsonSerializable(typeof(FiltersConfig))]
+[JsonSerializable(typeof(OutputConfig))]
+[JsonSerializable(typeof(Dictionary<string, ProfileConfig>))]
+[JsonSerializable(typeof(Dictionary<string, string>))]
+[JsonSerializable(typeof(List<string>))]
+internal partial class IptvConfigJsonContext : JsonSerializerContext
+{
+}
 
 public sealed class IptvConfig
 {
