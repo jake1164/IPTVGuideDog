@@ -29,8 +29,9 @@ public static class EnvFileLoader
 
                 var key = trimmed[..idx].Trim();
                 var value = trimmed[(idx + 1)..].Trim();
-                if ((key.Equals("USER", StringComparison.OrdinalIgnoreCase) || key.Equals("PASS", StringComparison.OrdinalIgnoreCase))
-                    && !map.ContainsKey(key))
+                
+                // Accept any key, not just USER and PASS
+                if (!string.IsNullOrWhiteSpace(key) && !map.ContainsKey(key))
                 {
                     map[key] = value;
                 }

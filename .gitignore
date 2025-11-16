@@ -61,6 +61,8 @@ TestResults/
 .env
 *.env
 
+.config/
+
 # Groups files (contains user preferences and may be large)
 groups.txt
 groups.txt.bak*

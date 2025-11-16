@@ -13,24 +13,16 @@ public static class UrlSubstitutor
         string result = value;
         foreach (var kvp in env)
         {
-            if (!string.Equals(kvp.Key, "USER", StringComparison.OrdinalIgnoreCase) &&
-                !string.Equals(kvp.Key, "PASS", StringComparison.OrdinalIgnoreCase))
-            {
-                continue;
-            }
-
-            var upper = kvp.Key.ToUpperInvariant();
-            var lower = kvp.Key.ToLowerInvariant();
             var before = result;
             
-            // Replace %USER%, %user%, %PASS%, %pass% (case-insensitive)
-            result = result.Replace($"%{upper}%", kvp.Value, StringComparison.Ordinal);
-            result = result.Replace($"%{lower}%", kvp.Value, StringComparison.Ordinal);
+            // Replace %KEY% with value (case-insensitive key matching)
+            var pattern = $"%{kvp.Key}%";
+            result = result.Replace(pattern, kvp.Value, StringComparison.OrdinalIgnoreCase);
             
             // Track if replaced
             if (!string.Equals(before, result, StringComparison.Ordinal))
             {
-                replaced.Add(upper);
+                replaced.Add(kvp.Key.ToUpperInvariant());
             }
         }
 

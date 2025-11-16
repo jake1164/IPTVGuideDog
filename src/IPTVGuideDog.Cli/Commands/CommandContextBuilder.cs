@@ -52,7 +52,7 @@ public static class CommandContextBuilder
         // Use shell's working directory for zero-config mode
         var envDirectory = configDir ?? Directory.GetCurrentDirectory();
         var env = EnvFileLoader.LoadFromDirectory(envDirectory);
-        var foundKeys = env.Keys.Where(k => k.Equals("USER", StringComparison.OrdinalIgnoreCase) || k.Equals("PASS", StringComparison.OrdinalIgnoreCase)).ToList();
+        
         List<string> playlistReplaced = new();
         List<string> epgReplaced = new();
         var playlistSource = UrlSubstitutor.SubstituteCredentials(
@@ -80,16 +80,17 @@ public static class CommandContextBuilder
         {
             if (env.Count > 0)
             {
-                await diagnostics.WriteLineAsync($"[VERBOSE] .env file found: {Path.Combine(envDirectory, ".env")}");
-                await diagnostics.WriteLineAsync($"[VERBOSE] Keys found: {string.Join(", ", foundKeys)}");
+                var envPath = Path.Combine(envDirectory, ".env");
+                await diagnostics.WriteLineAsync($"[VERBOSE] .env file found: {envPath}");
+                await diagnostics.WriteLineAsync($"[VERBOSE] Loaded {env.Count} environment variable(s): {string.Join(", ", env.Keys)}");
                 if (playlistReplaced.Count > 0)
-                    await diagnostics.WriteLineAsync($"[VERBOSE] Playlist URL: replaced {string.Join(", ", playlistReplaced)}");
+                    await diagnostics.WriteLineAsync($"[VERBOSE] Playlist URL: substituted {string.Join(", ", playlistReplaced)}");
                 if (epgReplaced.Count > 0)
-                    await diagnostics.WriteLineAsync($"[VERBOSE] EPG URL: replaced {string.Join(", ", epgReplaced)}");
+                    await diagnostics.WriteLineAsync($"[VERBOSE] EPG URL: substituted {string.Join(", ", epgReplaced)}");
             }
             else
             {
-                await diagnostics.WriteLineAsync($"[VERBOSE] No .env file found or no USER/PASS keys present.");
+                await diagnostics.WriteLineAsync($"[VERBOSE] No .env file found in {envDirectory}.");
             }
         }
 

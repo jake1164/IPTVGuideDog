@@ -1,0 +1,32 @@
+{
+  "profiles": {
+    "IPTVGuideDog.Cli": {
+      "commandName": "Project"
+    },
+    "Run with Onyx": {
+      "commandName": "Project",
+      "commandLineArgs": "run --config .config/config.yaml --profile onyx --verbose",
+      "workingDirectory": "$(ProjectDir)../.."
+    },
+    "Run with Delta": {
+      "commandName": "Project",
+      "commandLineArgs": "run --config .config/config.yaml --profile delta --verbose",
+      "workingDirectory": "$(ProjectDir)../.."
+    },
+    "Groups for Onyx": {
+      "commandName": "Project",
+      "commandLineArgs": "groups --config .config/config.yaml --profile onyx --verbose --out-groups TestResults/onyx_remove.txt",
+      "workingDirectory": "$(ProjectDir)../.."
+    },
+    "Groups for Delta": {
+      "commandName": "Project",
+      "commandLineArgs": "groups --config .config/config.yaml --profile delta --verbose --out-groups TestResults/delta_remove.txt",
+      "workingDirectory": "$(ProjectDir)../.."
+    },
+    "Version": {
+      "commandName": "Project",
+      "commandLineArgs": "--version",
+      "workingDirectory": "$(ProjectDir)../.."
+    }
+  }
+}

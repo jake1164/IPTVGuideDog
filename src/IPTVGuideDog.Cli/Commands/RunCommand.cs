@@ -368,8 +368,14 @@ public sealed class RunCommand
         }
         else
         {
+            var fullPath = Path.GetFullPath(outputPath);
+            if (_diagnostics != TextWriter.Null)
+            {
+                await _diagnostics.WriteLineAsync($"[VERBOSE] Writing playlist to: {fullPath}");
+            }
+            
             await TextFileWriter.WriteAtomicAsync(outputPath, lines, cancellationToken);
-            await _stdout.WriteLineAsync($"Playlist written to {outputPath}");
+            await _stdout.WriteLineAsync($"Playlist written to {fullPath}");
         }
     }
 
@@ -385,8 +391,14 @@ public sealed class RunCommand
         }
         else
         {
+            var fullPath = Path.GetFullPath(outputPath);
+            if (_diagnostics != TextWriter.Null)
+            {
+                await _diagnostics.WriteLineAsync($"[VERBOSE] Writing EPG to: {fullPath}");
+            }
+            
             await TextFileWriter.WriteAtomicTextAsync(outputPath, content, cancellationToken);
-            await _stdout.WriteLineAsync($"EPG written to {outputPath}");
+            await _stdout.WriteLineAsync($"EPG written to {fullPath}");
         }
     }
 
