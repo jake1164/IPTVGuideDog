@@ -27,6 +27,11 @@
       "commandName": "Project",
       "commandLineArgs": "--version",
       "workingDirectory": "$(ProjectDir)../.."
+    },
+    "Groups cmd for Delta": {
+      "commandName": "Project",
+      "commandLineArgs": "groups --playlist-url %DELTA_URL%/get.php?username=%DELTA_USER%&password=%DELTA_PASS%&type=m3u_plus --verbose --out-groups TestResults/delta_remove.txt",
+      "workingDirectory": "D:\\github\\IPTVGuideDog\\.config"
     }
   }
 }

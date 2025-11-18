@@ -114,9 +114,10 @@ public static class GroupsFileValidator
     {
         var currentVersion = GetCurrentVersion();
         var versionLine = $"{VersionPrefix}{currentVersion}";
-        // Pad to 88 characters total (to match the other header lines which end at column 88)
-        // Final length calculation: 81 chars + " ######" (7 chars) = 88
-        var paddedVersionLine = versionLine.PadRight(81) + " ######";
+        // Pad so the line (including trailing ' ######') is always 88 characters
+        const int totalLength = 88;
+        const string trailer = " ######";
+        var paddedVersionLine = versionLine.PadRight(totalLength - trailer.Length) + trailer;
         return
         [
             HeaderLine1,

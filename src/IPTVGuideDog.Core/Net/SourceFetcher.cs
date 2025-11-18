@@ -30,6 +30,14 @@ public sealed class SourceFetcher
                 }
 
                 using var response = await _httpClient.GetAsync(uri, cancellationToken);
+                
+                if (_diagnostics != TextWriter.Null)
+                {
+                    await _diagnostics.WriteLineAsync($"Response status: {(int)response.StatusCode} {response.ReasonPhrase}");
+                    await _diagnostics.WriteLineAsync($"Content-Type: {response.Content.Headers.ContentType}");
+                    await _diagnostics.WriteLineAsync($"Content-Length: {response.Content.Headers.ContentLength?.ToString() ?? "unknown"}");
+                }
+
                 if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized || response.StatusCode == System.Net.HttpStatusCode.Forbidden)
                 {
                     throw new CliException($"Authentication failed when requesting {UrlRedactor.RedactUrl(uri)}", ExitCodes.AuthError);
@@ -37,7 +45,40 @@ public sealed class SourceFetcher
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    throw new CliException($"Request to {UrlRedactor.RedactUrl(uri)} failed with status {(int)response.StatusCode}.", ExitCodes.NetworkError);
+                    // Try to read response body for more details about the error
+                    var errorBody = string.Empty;
+                    try
+                    {
+                        errorBody = await response.Content.ReadAsStringAsync(cancellationToken);
+                        
+                        // Log full error body to diagnostics
+                        if (_diagnostics != TextWriter.Null && !string.IsNullOrWhiteSpace(errorBody))
+                        {
+                            await _diagnostics.WriteLineAsync("=== Server Error Response Body ===");
+                            await _diagnostics.WriteLineAsync(errorBody);
+                            await _diagnostics.WriteLineAsync("=== End Server Error Response ===");
+                        }
+                        
+                        // Truncate for exception message
+                        if (!string.IsNullOrWhiteSpace(errorBody) && errorBody.Length > 500)
+                        {
+                            errorBody = errorBody.Substring(0, 500) + "...";
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        if (_diagnostics != TextWriter.Null)
+                        {
+                            await _diagnostics.WriteLineAsync($"Failed to read error response body: {ex.Message}");
+                        }
+                    }
+
+                    var errorMessage = $"Request to {UrlRedactor.RedactUrl(uri)} failed with status {(int)response.StatusCode} ({response.ReasonPhrase}).";
+                    if (!string.IsNullOrWhiteSpace(errorBody))
+                    {
+                        errorMessage += $"\nServer response: {errorBody}";
+                    }
+                    throw new CliException(errorMessage, ExitCodes.NetworkError);
                 }
 
                 return await response.Content.ReadAsStringAsync(cancellationToken);
@@ -48,10 +89,18 @@ public sealed class SourceFetcher
             }
             catch (TaskCanceledException ex)
             {
+                if (_diagnostics != TextWriter.Null)
+                {
+                    await _diagnostics.WriteLineAsync($"Request timed out: {ex}");
+                }
                 throw new CliException($"Request to {UrlRedactor.RedactUrl(uri)} timed out: {ex.Message}", ExitCodes.NetworkError);
             }
             catch (HttpRequestException ex)
             {
+                if (_diagnostics != TextWriter.Null)
+                {
+                    await _diagnostics.WriteLineAsync($"Request failed: {ex}");
+                }
                 throw new CliException($"Request to {UrlRedactor.RedactUrl(uri)} failed: {ex.Message}", ExitCodes.NetworkError);
             }
         }
@@ -90,6 +139,14 @@ public sealed class SourceFetcher
                 }
 
                 using var response = await _httpClient.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+                
+                if (_diagnostics != TextWriter.Null)
+                {
+                    await _diagnostics.WriteLineAsync($"Response status: {(int)response.StatusCode} {response.ReasonPhrase}");
+                    await _diagnostics.WriteLineAsync($"Content-Type: {response.Content.Headers.ContentType}");
+                    await _diagnostics.WriteLineAsync($"Content-Length: {response.Content.Headers.ContentLength?.ToString() ?? "unknown"}");
+                }
+
                 if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized || response.StatusCode == System.Net.HttpStatusCode.Forbidden)
                 {
                     throw new CliException($"Authentication failed when requesting {UrlRedactor.RedactUrl(uri)}", ExitCodes.AuthError);
@@ -97,7 +154,40 @@ public sealed class SourceFetcher
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    throw new CliException($"Request to {UrlRedactor.RedactUrl(uri)} failed with status {(int)response.StatusCode}.", ExitCodes.NetworkError);
+                    // Try to read response body for more details about the error
+                    var errorBody = string.Empty;
+                    try
+                    {
+                        errorBody = await response.Content.ReadAsStringAsync(cancellationToken);
+                        
+                        // Log full error body to diagnostics
+                        if (_diagnostics != TextWriter.Null && !string.IsNullOrWhiteSpace(errorBody))
+                        {
+                            await _diagnostics.WriteLineAsync("=== Server Error Response Body ===");
+                            await _diagnostics.WriteLineAsync(errorBody);
+                            await _diagnostics.WriteLineAsync("=== End Server Error Response ===");
+                        }
+                        
+                        // Truncate for exception message
+                        if (!string.IsNullOrWhiteSpace(errorBody) && errorBody.Length > 500)
+                        {
+                            errorBody = errorBody.Substring(0, 500) + "...";
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        if (_diagnostics != TextWriter.Null)
+                        {
+                            await _diagnostics.WriteLineAsync($"Failed to read error response body: {ex.Message}");
+                        }
+                    }
+
+                    var errorMessage = $"Request to {UrlRedactor.RedactUrl(uri)} failed with status {(int)response.StatusCode} ({response.ReasonPhrase}).";
+                    if (!string.IsNullOrWhiteSpace(errorBody))
+                    {
+                        errorMessage += $"\nServer response: {errorBody}";
+                    }
+                    throw new CliException(errorMessage, ExitCodes.NetworkError);
                 }
 
                 var total = response.Content.Headers.ContentLength ?? -1L;
@@ -147,10 +237,18 @@ public sealed class SourceFetcher
             }
             catch (TaskCanceledException ex)
             {
+                if (_diagnostics != TextWriter.Null)
+                {
+                    await _diagnostics.WriteLineAsync($"Request timed out: {ex}");
+                }
                 throw new CliException($"Request to {UrlRedactor.RedactUrl(uri)} timed out: {ex.Message}", ExitCodes.NetworkError);
             }
             catch (HttpRequestException ex)
             {
+                if (_diagnostics != TextWriter.Null)
+                {
+                    await _diagnostics.WriteLineAsync($"Request failed: {ex}");
+                }
                 throw new CliException($"Request to {UrlRedactor.RedactUrl(uri)} failed: {ex.Message}", ExitCodes.NetworkError);
             }
         }
