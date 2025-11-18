@@ -22,7 +22,7 @@ public static class UsagePrinter
         stdout.WriteLine("  --out-groups <path>");
         stdout.WriteLine("  --out-playlist <path>");
         stdout.WriteLine("  --out-epg <path>");
-        stdout.WriteLine("  --live                Filter to only live streams (applies after download)");
+        stdout.WriteLine("  --live                Filter to exclude VOD content (movies/series); keeps live streams only");
         stdout.WriteLine("  --verbose");
         stdout.WriteLine("  --force");
         stdout.WriteLine("  --version, -v   Show version information and exit.");

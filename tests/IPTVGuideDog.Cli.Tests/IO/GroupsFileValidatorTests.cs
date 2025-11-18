@@ -350,8 +350,9 @@ News";
         StringAssert.Contains(version, ".");
         
         var parts = version.Split('.');
-        Assert.HasCount(2, parts);
-        Assert.IsTrue(int.TryParse(parts[0], out _));
-        Assert.IsTrue(int.TryParse(parts[1], out _));
+        Assert.HasCount(3, parts, $"Version should have 3 parts (Major.Minor.Build) but got: {version}");
+        Assert.IsTrue(int.TryParse(parts[0], out _), $"Major version '{parts[0]}' should be numeric");
+        Assert.IsTrue(int.TryParse(parts[1], out _), $"Minor version '{parts[1]}' should be numeric");
+        Assert.IsTrue(int.TryParse(parts[2], out _), $"Build version '{parts[2]}' should be numeric");
     }
 }

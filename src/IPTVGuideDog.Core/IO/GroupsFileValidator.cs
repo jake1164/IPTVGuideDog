@@ -12,7 +12,7 @@ public static class GroupsFileValidator
     public static string GetCurrentVersion()
     {
         var version = Assembly.GetExecutingAssembly().GetName().Version;
-        return version != null ? $"{version.Major}.{version.Minor}" : "1.0";
+        return version != null ? $"{version.Major}.{version.Minor}.{version.Build}" : "1.0.0";
     }
 
     public static async Task<ValidationResult> ValidateFileAsync(string filePath, CancellationToken cancellationToken)

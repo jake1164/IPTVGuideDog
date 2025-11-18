@@ -27,7 +27,13 @@ Create or refresh the **group selection file** used by filtering.
 
 ### Note on `--live` flag
 
-- `--live` (optional): when provided, only **live** streams are enumerated (simple heuristics: stream URL contains a `/live/` path segment or `type=live` query). This helps you export a group file that reflects live channels only.
+- `--live` (optional): when provided, only **live** streams are enumerated. This filter works by **excluding** VOD content (movies and series) based on URL patterns:
+  - URLs containing `/movie/` or `/movies/` path segments are excluded
+  - URLs containing `/series/` path segments are excluded
+  - URLs with `type=vod`, `type=movie`, `type=series`, `kind=vod`, `kind=movie`, or `kind=series` query parameters are excluded
+  - Everything else is considered a live stream
+  
+  This approach is more reliable than trying to detect live streams directly, as VOD content has consistent URL patterns across most IPTV providers.
 
 ### Note on `--force` flag
 
@@ -83,7 +89,13 @@ One-shot pipeline: **fetch → filter → write**.
 
 #### Note on `--live`
 
-- `--live` (optional): when provided, only **live** streams are processed (same heuristics as above). This filter is applied **before** reading and applying the groups file.
+- `--live` (optional): when provided, only **live** streams are processed. This filter works by **excluding** VOD content (movies and series) based on URL patterns:
+  - URLs containing `/movie/` or `/movies/` path segments are excluded
+  - URLs containing `/series/` path segments are excluded
+  - URLs with `type=vod`, `type=movie`, `type=series`, `kind=vod`, `kind=movie`, or `kind=series` query parameters are excluded
+  - Everything else is considered a live stream
+  
+  This filter is applied **before** reading and applying the groups file, making it more efficient. This approach is more reliable than trying to detect live streams directly, as VOD content has consistent URL patterns across most IPTV providers.
 #### Note on Stdout behavior
 - If **only a playlist** is being produced and `--out-playlist` is **omitted**, the playlist is written to **stdout**.
 - If an **EPG** is also being produced, at least one of `--out-playlist` or `--out-epg` must be provided; alternatively, pass `--out-playlist -` or `--out-epg -` to write that artifact to **stdout**.
@@ -94,10 +106,13 @@ One-shot pipeline: **fetch → filter → write**.
 2. If a suitable `.env` exists (see Modes of use), substitute `%USER%`/`%PASS%` **inside URL strings/fields only**.
 3. Fetch playlist (and EPG if provided).
 4. Parse M3U/XMLTV.
-5. if `--live` is provided only stream urls containting `/live/` OR `type=live` are kept, everything else (series/vod) are dropped. 
-5. If `--groups-file` provided: **drop** any groups that are not commented (commented lines are kept).
-6. Write outputs atomically to `--out-playlist`/`--out-epg`.
-7. Log newly discovered groups and summarize channel changes **only for kept groups**.
+5. If `--live` is provided, exclude VOD content (movies/series):
+   - Entries with URLs containing `/movie/`, `/movies/`, or `/series/` path segments are dropped
+   - Entries with URLs containing `type=vod`, `type=movie`, `type=series`, `kind=vod`, `kind=movie`, or `kind=series` query parameters are dropped
+   - All other entries are kept as live streams
+6. If `--groups-file` provided: **drop** any groups that are not commented (commented lines are kept).
+7. Write outputs atomically to `--out-playlist`/`--out-epg`.
+8. Log newly discovered groups and summarize channel changes **only for kept groups**.
 
 ### Examples
 

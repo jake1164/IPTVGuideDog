@@ -534,6 +534,186 @@ http://example.com/2";
         }
     }
 
+    [TestMethod]
+    public async Task ExecuteAsync_UpdatesVersion_WhenMinorVersionDiffers()
+    {
+        var tmpFile = Path.GetTempFileName();
+        try
+        {
+            // Create a file with the same major version but different minor version
+            // This simulates an upgrade scenario where the file format is compatible
+            var currentVersion = GroupsFileValidator.GetCurrentVersion();
+            var majorVersion = currentVersion.Split('.')[0];
+            var differentMinorVersion = $"{majorVersion}.5"; // Different minor version
+            
+            var oldVersionContent = $@"######  This is a DROP list. Put a '#' in front of any group you want to KEEP.  ######
+######  Lines without '#' will be DROPPED. Blank lines are ignored.             ######
+######  Created with iptv version {differentMinorVersion}                                          ######
+
+#Sports
+News";
+            await File.WriteAllTextAsync(tmpFile, oldVersionContent);
+
+            var playlistContent = @"#EXTM3U
+#EXTINF:-1 tvg-id="""" tvg-name=""Channel 1"" group-title=""Sports"",Channel 1
+http://example.com/1
+#EXTINF:-1 tvg-id="""" tvg-name=""Channel 2"" group-title=""News"",Channel 2
+http://example.com/2
+#EXTINF:-1 tvg-id="""" tvg-name=""Channel 3"" group-title=""Movies"",Channel 3
+http://example.com/3";
+
+            var cmd = CreateGroupsCommand(playlistContent);
+            var context = new CommandContext(
+                CommandKind.Groups,
+                new CommandOptionSet(new Dictionary<string, List<string>>()),
+                null, null, null,
+                new Dictionary<string, string>(),
+                "http://test",
+                null, null,
+                tmpFile,
+                null, null,
+                false, false);
+
+            var result = await cmd.ExecuteAsync(context, CancellationToken.None);
+            
+            // Should succeed
+            Assert.AreEqual(0, result);
+            
+            // Read the updated file
+            var lines = await File.ReadAllLinesAsync(tmpFile);
+            
+            // Should contain the new group
+            CollectionAssert.Contains(lines, "##Movies");
+            
+            // Version line should be updated to current version
+            var versionLine = lines.FirstOrDefault(l => l.Contains("Created with iptv version"));
+            Assert.IsNotNull(versionLine);
+            StringAssert.Contains(versionLine, $"version {currentVersion}");
+            
+            // Backup should have been created since we made changes
+            var backupPath = $"{tmpFile}.bak";
+            Assert.IsTrue(File.Exists(backupPath));
+            
+            // Verify backup has the old version
+            var backupLines = await File.ReadAllLinesAsync(backupPath);
+            var backupVersionLine = backupLines.FirstOrDefault(l => l.Contains("Created with iptv version"));
+            Assert.IsNotNull(backupVersionLine);
+            StringAssert.Contains(backupVersionLine, $"version {differentMinorVersion}");
+            
+            // Cleanup
+            if (File.Exists(backupPath))
+            {
+                File.Delete(backupPath);
+            }
+        }
+        finally
+        {
+            if (File.Exists(tmpFile)) File.Delete(tmpFile);
+        }
+    }
+
+    [TestMethod]
+    public async Task ExecuteAsync_UpdatesVersionOnly_WhenNoNewGroups()
+    {
+        var tmpFile = Path.GetTempFileName();
+        try
+        {
+            // Create a file with the same major version but different minor version
+            var currentVersion = GroupsFileValidator.GetCurrentVersion();
+            var majorVersion = currentVersion.Split('.')[0];
+            var differentMinorVersion = $"{majorVersion}.5.0";
+            
+            var oldVersionContent = $@"######  This is a DROP list. Put a '#' in front of any group you want to KEEP.  ######
+######  Lines without '#' will be DROPPED. Blank lines are ignored.             ######
+######  Created with iptv version {differentMinorVersion}                                          ######
+
+#Sports
+News";
+            await File.WriteAllTextAsync(tmpFile, oldVersionContent);
+
+            // Playlist has only existing groups, no new ones
+            var playlistContent = @"#EXTM3U
+#EXTINF:-1 tvg-id="""" tvg-name=""Channel 1"" group-title=""Sports"",Channel 1
+http://example.com/1
+#EXTINF:-1 tvg-id="""" tvg-name=""Channel 2"" group-title=""News"",Channel 2
+http://example.com/2";
+
+            var cmd = CreateGroupsCommand(playlistContent);
+            var context = new CommandContext(
+                CommandKind.Groups,
+                new CommandOptionSet(new Dictionary<string, List<string>>()),
+                null, null, null,
+                new Dictionary<string, string>(),
+                "http://test",
+                null, null,
+                tmpFile,
+                null, null,
+                false, false);
+
+            var result = await cmd.ExecuteAsync(context, CancellationToken.None);
+            
+            // Should succeed
+            Assert.AreEqual(0, result);
+            
+            // Read the updated file
+            var lines = await File.ReadAllLinesAsync(tmpFile);
+            
+            // Version line should be updated to current version
+            var versionLine = lines.FirstOrDefault(l => l.Contains("Created with iptv version"));
+            Assert.IsNotNull(versionLine);
+            StringAssert.Contains(versionLine, $"version {currentVersion}");
+            
+            // Backup should have been created even though no new groups were added (version was updated)
+            var backupPath = $"{tmpFile}.bak";
+            Assert.IsTrue(File.Exists(backupPath));
+            
+            // Cleanup
+            if (File.Exists(backupPath))
+            {
+                File.Delete(backupPath);
+            }
+        }
+        finally
+        {
+            if (File.Exists(tmpFile)) File.Delete(tmpFile);
+        }
+    }
+
+    [TestMethod]
+    public void CreateHeader_AllLinesAreSameLength()
+    {
+        var header = GroupsFileValidator.CreateHeader();
+        
+        // All header lines (excluding the empty line at the end) should be exactly 88 characters
+        const int expectedLength = 88;
+        
+        for (int i = 0; i < header.Length - 1; i++) // Skip the last empty line
+        {
+            var line = header[i];
+            Assert.AreEqual(expectedLength, line.Length, 
+                $"Header line {i} has length {line.Length} but expected {expectedLength}: '{line}'");
+        }
+        
+        // Last line should be empty
+        Assert.AreEqual(string.Empty, header[^1]);
+    }
+
+    [TestMethod]
+    public void GetCurrentVersion_IncludesBuildNumber()
+    {
+        var version = GroupsFileValidator.GetCurrentVersion();
+        
+        // Should have format X.Y.Z (e.g., 0.41.1)
+        var parts = version.Split('.');
+        Assert.HasCount(3, parts, $"Version '{version}' should have 3 parts (Major.Minor.Build)");
+        
+        // All parts should be numeric
+        foreach (var part in parts)
+        {
+            Assert.IsTrue(int.TryParse(part, out _), $"Version part '{part}' should be numeric");
+        }
+    }
+
     private static GroupsCommand CreateGroupsCommand(string playlistResponse)
     {
         var stdout = new StringWriter();

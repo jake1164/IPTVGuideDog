@@ -151,15 +151,22 @@ No new groups found. File groups.txt unchanged.
 
 ### Upgrading from Pre-1.0 Files
 If you have a groups file without a version line:
-- The tool will add the version line automatically
+- The tool will add the version line automatically when you update the file
 - Your existing group selections are preserved
 - A backup is created for safety
 
+### Version Updates
+When the tool detects a different version in your groups file:
+- If the major version is the same, the version line is automatically updated to the current version
+- A backup is created before updating
+- The tool displays a message indicating the version was updated (e.g., "Updated version from 1.0 to 1.2")
+- With `--force`, version updates will occur even if validation would normally fail
+
 ### Major Version Incompatibility
 If you need to use a groups file from a different major version:
-1. The tool will refuse to modify it
-2. You can manually update the version line (at your own risk)
-3. Or create a new groups file from scratch
+1. Without `--force`: The tool will refuse to modify it
+2. With `--force`: The tool will update the version line and proceed
+3. Alternatively, create a new groups file from scratch
 
 ## Best Practices
 

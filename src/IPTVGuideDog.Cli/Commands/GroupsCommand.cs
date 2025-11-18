@@ -139,10 +139,13 @@ public sealed class GroupsCommand
             // Check if file exists and merge with existing groups
             if (File.Exists(outPath))
             {
+                string? fileVersion = null;
+                
                 // Validate the existing file (unless --force is used)
                 if (!force)
                 {
                     var validation = await GroupsFileValidator.ValidateFileAsync(outPath, cancellationToken);
+                    fileVersion = validation.FileVersion;
                     
                     if (!validation.IsValid)
                     {
@@ -162,6 +165,8 @@ public sealed class GroupsCommand
                 {
                     // Force is enabled, validate to show warning but proceed anyway
                     var validation = await GroupsFileValidator.ValidateFileAsync(outPath, cancellationToken);
+                    fileVersion = validation.FileVersion;
+                    
                     if (!validation.IsValid)
                     {
                         await _stderr.WriteLineAsync($"Warning: {validation.ErrorMessage}");
@@ -169,9 +174,14 @@ public sealed class GroupsCommand
                     }
                 }
 
+                var currentVersion = GroupsFileValidator.GetCurrentVersion();
                 var result = await MergeWithExistingGroupsFileAsync(outPath, groups, cancellationToken);
                 
-                if (result.NewGroups.Count > 0)
+                // Check if version needs updating or if new groups were added
+                var versionChanged = fileVersion != null && fileVersion != currentVersion;
+                var hasChanges = result.NewGroups.Count > 0 || versionChanged;
+                
+                if (hasChanges)
                 {
                     // Only create backup if we're actually making changes
                     var backup = GroupsFileValidator.CreateBackupPath(outPath);
@@ -181,22 +191,44 @@ public sealed class GroupsCommand
                     
                     if (isInteractive)
                     {
-                        _console.MarkupLine($"[green]Added {result.NewGroups.Count} new group(s) to {outPath}[/]");
-                        _console.MarkupLine($"[dim]Backup saved to: {backup}[/]");
-                        _console.MarkupLine("[yellow]New groups found:[/]");
-                        foreach (var newGroup in result.NewGroups)
+                        if (result.NewGroups.Count > 0)
                         {
-                            _console.MarkupLine($"  [cyan]{newGroup}[/]");
+                            _console.MarkupLine($"[green]Added {result.NewGroups.Count} new group(s) to {outPath}[/]");
+                        }
+                        if (versionChanged)
+                        {
+                            _console.MarkupLine($"[blue]Updated version from {fileVersion} to {currentVersion}[/]");
+                        }
+                        _console.MarkupLine($"[dim]Backup saved to: {backup}[/]");
+                        
+                        if (result.NewGroups.Count > 0)
+                        {
+                            _console.MarkupLine("[yellow]New groups found:[/]");
+                            foreach (var newGroup in result.NewGroups)
+                            {
+                                _console.MarkupLine($"  [cyan]{newGroup}[/]");
+                            }
                         }
                     }
                     else
                     {
-                        await _stdout.WriteLineAsync($"Added {result.NewGroups.Count} new group(s) to {outPath}");
-                        await _stdout.WriteLineAsync($"Backup saved to: {backup}");
-                        await _stdout.WriteLineAsync("New groups found:");
-                        foreach (var newGroup in result.NewGroups)
+                        if (result.NewGroups.Count > 0)
                         {
-                            await _stdout.WriteLineAsync($"  {newGroup}");
+                            await _stdout.WriteLineAsync($"Added {result.NewGroups.Count} new group(s) to {outPath}");
+                        }
+                        if (versionChanged)
+                        {
+                            await _stdout.WriteLineAsync($"Updated version from {fileVersion} to {currentVersion}");
+                        }
+                        await _stdout.WriteLineAsync($"Backup saved to: {backup}");
+                        
+                        if (result.NewGroups.Count > 0)
+                        {
+                            await _stdout.WriteLineAsync("New groups found:");
+                            foreach (var newGroup in result.NewGroups)
+                            {
+                                await _stdout.WriteLineAsync($"  {newGroup}");
+                            }
                         }
                     }
                 }
@@ -253,7 +285,9 @@ public sealed class GroupsCommand
                 // Update version line to current version with proper padding
                 var currentVersion = GroupsFileValidator.GetCurrentVersion();
                 var versionLine = $"######  Created with iptv version {currentVersion}";
-                var paddedVersionLine = versionLine.PadRight(82) + " ######";
+                const int totalLength = 88;
+                const string trailer = " ######";
+                var paddedVersionLine = versionLine.PadRight(totalLength - trailer.Length) + trailer;
                 outputLines.Add(paddedVersionLine);
                 hasVersionLine = true;
                 headerProcessed = true;
@@ -286,7 +320,9 @@ public sealed class GroupsCommand
         {
             var currentVersion = GroupsFileValidator.GetCurrentVersion();
             var versionLine = $"######  Created with iptv version {currentVersion}";
-            var paddedVersionLine = versionLine.PadRight(82) + " ######";
+            const int totalLength = 88;
+            const string trailer = " ######";
+            var paddedVersionLine = versionLine.PadRight(totalLength - trailer.Length) + trailer;
             // Insert version line after the header lines
             var insertIndex = 0;
             for (int i = 0; i < outputLines.Count; i++)
