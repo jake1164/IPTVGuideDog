@@ -7,6 +7,7 @@ using IPTVGuideDog.Core.IO;
 using IPTVGuideDog.Core.M3u;
 using IPTVGuideDog.Core.Net;
 using System.Runtime.CompilerServices;
+using Spectre.Console;
 
 namespace IPTVGuideDog.Cli;
 
@@ -60,6 +61,10 @@ public sealed class CliApp : IDisposable
         }
 
         var diagnostics = options.IsFlagSet("verbose") ? _stdout : TextWriter.Null;
+        
+        // Create appropriate console - plain console if output is redirected (non-TTY)
+        // This prevents ANSI escape codes from polluting log files
+        var console = CreateConsole();
 
         try
         {
@@ -68,13 +73,13 @@ public sealed class CliApp : IDisposable
                 case "groups":
                 {
                     var context = await CommandContextBuilder.CreateAsync(options, CommandKind.Groups, diagnostics, cancellationToken);
-                    var command = new GroupsCommand(_stdout, _stderr, diagnostics, _httpClient, new PlaylistParser());
+                    var command = new GroupsCommand(_stdout, _stderr, diagnostics, _httpClient, new PlaylistParser(), console);
                     return await command.ExecuteAsync(context, cancellationToken);
                 }
                 case "run":
                 {
                     var context = await CommandContextBuilder.CreateAsync(options, CommandKind.Run, diagnostics, cancellationToken);
-                    var command = new RunCommand(_stdout, _stderr, diagnostics, _httpClient, new PlaylistParser());
+                    var command = new RunCommand(_stdout, _stderr, diagnostics, _httpClient, new PlaylistParser(), console);
                     return await command.ExecuteAsync(context, cancellationToken);
                 }
                 default:
@@ -107,5 +112,24 @@ public sealed class CliApp : IDisposable
             }
             return ExitCodes.OtherError;
         }
+    }
+
+    private static IAnsiConsole CreateConsole()
+    {
+        // Detect if stdout/stderr is redirected to a file (non-interactive/non-TTY)
+        // When redirected, we want plain text output without ANSI codes
+        if (Console.IsOutputRedirected || Console.IsErrorRedirected)
+        {
+            // Create a plain console with no ANSI support for clean log files
+            return AnsiConsole.Create(new AnsiConsoleSettings
+            {
+                Ansi = AnsiSupport.No,
+                ColorSystem = ColorSystemSupport.NoColors,
+                Out = new AnsiConsoleOutput(Console.Out),
+            });
+        }
+
+        // Use default interactive console with full ANSI support
+        return AnsiConsole.Console;
     }
 }

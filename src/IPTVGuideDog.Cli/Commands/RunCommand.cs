@@ -349,7 +349,12 @@ public sealed class RunCommand
     {
         var playlistToStdout = string.IsNullOrEmpty(playlistOut) || playlistOut == "-";
         var epgToStdout = epgRequested && (string.IsNullOrEmpty(epgOut) || epgOut == "-");
-        return !(playlistToStdout || epgToStdout);
+        var outputRedirected = Console.IsOutputRedirected || Console.IsErrorRedirected;
+        
+        // Use interactive mode only if:
+        // 1. Output is not going to stdout (we're writing to files)
+        // 2. AND stdout/stderr are NOT redirected (we're in a real terminal)
+        return !(playlistToStdout || epgToStdout) && !outputRedirected;
     }
 
     private async Task WritePlaylistAsync(

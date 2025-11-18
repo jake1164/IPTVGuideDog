@@ -42,14 +42,31 @@ public sealed class GroupsCommand
         }
 
         var fetcher = new SourceFetcher(_httpClient, _diagnostics);
-        var playlistContent = await fetcher.GetStringWithProgressAsync(context.PlaylistSource, _console, cancellationToken);
+        
+        // Detect if we should use interactive mode based on output redirection
+        var isInteractive = !Console.IsOutputRedirected && !Console.IsErrorRedirected;
+        
+        var playlistContent = isInteractive
+            ? await fetcher.GetStringWithProgressAsync(context.PlaylistSource, _console, cancellationToken)
+            : await fetcher.GetStringAsync(context.PlaylistSource, cancellationToken);
 
         PlaylistDocument document = null!;
-        await _console.Status()
-            .StartAsync("Parsing playlist...", async ctx =>
+        if (isInteractive)
+        {
+            await _console.Status()
+                .StartAsync("Parsing playlist...", async ctx =>
+                {
+                    document = await Task.Run(() => _parser.Parse(playlistContent, cancellationToken), cancellationToken);
+                });
+        }
+        else
+        {
+            if (_diagnostics != TextWriter.Null)
             {
-                document = await Task.Run(() => _parser.Parse(playlistContent, cancellationToken), cancellationToken);
-            });
+                await _diagnostics.WriteLineAsync("Parsing playlist...");
+            }
+            document = _parser.Parse(playlistContent, cancellationToken);
+        }
 
         IEnumerable<M3uEntry> entries = document.Entries.Where(e => !string.IsNullOrEmpty(e.Url));
         if (context.LiveOnly)
@@ -58,20 +75,37 @@ public sealed class GroupsCommand
         }
 
         var groups = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
-        await _console.Status()
-            .StartAsync("Extracting groups...", async ctx =>
-            {
-                await Task.Run(() =>
+        if (isInteractive)
+        {
+            await _console.Status()
+                .StartAsync("Extracting groups...", async ctx =>
                 {
-                    foreach (var entry in entries)
+                    await Task.Run(() =>
                     {
-                        if (!string.IsNullOrEmpty(entry.Group))
+                        foreach (var entry in entries)
                         {
-                            groups.Add(entry.Group);
+                            if (!string.IsNullOrEmpty(entry.Group))
+                            {
+                                groups.Add(entry.Group);
+                            }
                         }
-                    }
-                }, cancellationToken);
-            });
+                    }, cancellationToken);
+                });
+        }
+        else
+        {
+            if (_diagnostics != TextWriter.Null)
+            {
+                await _diagnostics.WriteLineAsync("Extracting groups...");
+            }
+            foreach (var entry in entries)
+            {
+                if (!string.IsNullOrEmpty(entry.Group))
+                {
+                    groups.Add(entry.Group);
+                }
+            }
+        }
 
         if (_diagnostics != TextWriter.Null)
         {
@@ -85,10 +119,19 @@ public sealed class GroupsCommand
             // Write to stdout
             var header = GroupsFileValidator.CreateHeader();
             var outputLines = header.Concat(groups).ToList();
-            _console.MarkupLine($"[blue]Displaying {groups.Count} discovered groups:[/]");
+            
+            if (isInteractive)
+            {
+                _console.MarkupLine($"[blue]Displaying {groups.Count} discovered groups:[/]");
+            }
+            else
+            {
+                await _stdout.WriteLineAsync($"Displaying {groups.Count} discovered groups:");
+            }
+            
             foreach (var line in outputLines)
             {
-                _console.WriteLine(line);
+                await _stdout.WriteLineAsync(line);
             }
         }
         else
@@ -136,17 +179,37 @@ public sealed class GroupsCommand
                     
                     await TextFileWriter.WriteAtomicAsync(outPath, result.OutputLines, cancellationToken);
                     
-                    _console.MarkupLine($"[green]Added {result.NewGroups.Count} new group(s) to {outPath}[/]");
-                    _console.MarkupLine($"[dim]Backup saved to: {backup}[/]");
-                    _console.MarkupLine("[yellow]New groups found:[/]");
-                    foreach (var newGroup in result.NewGroups)
+                    if (isInteractive)
                     {
-                        _console.MarkupLine($"  [cyan]{newGroup}[/]");
+                        _console.MarkupLine($"[green]Added {result.NewGroups.Count} new group(s) to {outPath}[/]");
+                        _console.MarkupLine($"[dim]Backup saved to: {backup}[/]");
+                        _console.MarkupLine("[yellow]New groups found:[/]");
+                        foreach (var newGroup in result.NewGroups)
+                        {
+                            _console.MarkupLine($"  [cyan]{newGroup}[/]");
+                        }
+                    }
+                    else
+                    {
+                        await _stdout.WriteLineAsync($"Added {result.NewGroups.Count} new group(s) to {outPath}");
+                        await _stdout.WriteLineAsync($"Backup saved to: {backup}");
+                        await _stdout.WriteLineAsync("New groups found:");
+                        foreach (var newGroup in result.NewGroups)
+                        {
+                            await _stdout.WriteLineAsync($"  {newGroup}");
+                        }
                     }
                 }
                 else
                 {
-                    _console.MarkupLine($"[green]No new groups found. File {outPath} unchanged.[/]");
+                    if (isInteractive)
+                    {
+                        _console.MarkupLine($"[green]No new groups found. File {outPath} unchanged.[/]");
+                    }
+                    else
+                    {
+                        await _stdout.WriteLineAsync($"No new groups found. File {outPath} unchanged.");
+                    }
                 }
             }
             else
@@ -155,7 +218,15 @@ public sealed class GroupsCommand
                 var header = GroupsFileValidator.CreateHeader();
                 var outputLines = header.Concat(groups).ToList();
                 await TextFileWriter.WriteAtomicAsync(outPath, outputLines, cancellationToken);
-                _console.MarkupLine($"[green]{groups.Count} groups written to {outPath}[/]");
+                
+                if (isInteractive)
+                {
+                    _console.MarkupLine($"[green]{groups.Count} groups written to {outPath}[/]");
+                }
+                else
+                {
+                    await _stdout.WriteLineAsync($"{groups.Count} groups written to {outPath}");
+                }
             }
         }
 
