@@ -103,7 +103,7 @@ One-shot pipeline: **fetch → filter → write**.
 ### Behavior
 
 1. If `--config` is present, load profile; then apply any flag overrides.
-2. If a suitable `.env` exists (see Modes of use), substitute `%USER%`/`%PASS%` **inside URL strings/fields only**.
+2. If a suitable `.env` exists (see Environment behavior), substitute every `%VAR%` token (for example `%USER%`, `%ACCOUNT_PASS%`, `%API_TOKEN%`) **inside playlist/EPG URL strings only** before fetching.
 3. Fetch playlist (and EPG if provided).
 4. Parse M3U/XMLTV.
 5. If `--live` is provided, exclude VOD content (movies/series):
@@ -131,7 +131,7 @@ iptv run \
 
 ```bash
 iptv run --config /etc/iptv/config.yml --profile default --verbose --live
-# If /etc/iptv/.env exists, `%USER%` and `%PASS%` are substituted only in URL fields.
+# If /etc/iptv/.env exists, any matching %VAR% tokens in playlist/EPG URLs are replaced before download.
 ```
 
 **Using credentials from .env:**
@@ -149,12 +149,14 @@ iptv groups --playlist-url "http://host/get.php?username=%USER%&password=%PASS%&
 ---
 
 ## Environment behavior (strict)
-* **Only** `%USER%` and `%PASS%` (percent-delimited) are recognized, and **only** when a `.env` file exists.
-* **Zero-config mode:** if `./.env` exists, `%USER%`/`%PASS%` are substituted **inside URL strings only** before fetching.
-* **Config mode:** if a `.env` file exists in the **same directory as the `--config` file**, `%USER%`/`%PASS%` are substituted **inside URL fields only** before fetching.
-* If no `.env` is present, no substitution occurs.
-* Embedding credentials directly in URLs is fully supported.
-* **Shell compatibility:** The `%...%` format works reliably in PowerShell, Bash, CMD, and Zsh without shell expansion.
+* **Search order** – the CLI looks for `.env` files in a single location per invocation:
+  1. The directory that contains the `--config` file (when `--config` is supplied)
+  2. Otherwise, the current working directory
+  There is no additional fallback.
+* **Tokens** – every key inside `.env` (case-insensitive) becomes a `%VAR%` placeholder. Any matching `%VAR%` inside playlist or EPG URLs (from flags or config) is replaced before network calls. Use descriptive keys such as `%USER%`, `%PASS%`, `%ACCOUNT_EMAIL%`, or `%API_TOKEN%`.
+* **Scope** – substitution is limited to playlist/EPG URLs. Other config fields remain untouched.
+* If no `.env` is present at the search location, no substitution occurs. Embedding credentials directly in URLs is still fully supported.
+* **Shell compatibility** – the `%...%` format works reliably in PowerShell, Bash, CMD, and Zsh without shell expansion.
 
 ---
 

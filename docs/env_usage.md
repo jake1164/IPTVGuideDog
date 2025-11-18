@@ -13,7 +13,10 @@ In your working directory (or next to your config file), create a file named `.e
 ```env
 USER=your_username
 PASS=your_password
+SECONDARY_TOKEN=secret-value
 ```
+
+Reference them later as `%USER%`, `%PASS%`, `%SECONDARY_TOKEN%`, etc.
 
 **Important:** The `.env` file is automatically ignored by git (added to `.gitignore`).
 
@@ -39,19 +42,22 @@ iptv groups --playlist-url "http://host/get.php?username=%USER%&password=%PASS%&
 iptv groups --playlist-url "http://host/get.php?username=%USER%&password=%PASS%&type=m3u_plus&output=ts" --out-groups groups.txt --verbose
 ```
 
+Swap `%USER%`/`%PASS%` with any `%VAR%` tokens you've defined (e.g., `%PRIMARY_USER%`, `%SECONDARY_TOKEN%`).
+
 ---
 
 ## How It Works
 
-1. **The CLI reads `.env` from:**
-   - Current working directory (zero-config mode)
-   - Same directory as `--config` file (config mode)
+1. **Where `.env` is read from (search order):**
+   - When `--config` is supplied, the CLI only checks the directory that contains that config file.
+   - Otherwise, it checks the current working directory.
+   - There is no additional fallback search; make sure `.env` lives right next to the config or inside the directory you execute `iptv` from.
 
-2. **Only `USER` and `PASS` are recognized** (case-insensitive).
+2. **Every key is recognized** (case-insensitive). Define as many variables as you need, e.g. `PRIMARY_USER`, `SECONDARY_TOKEN`, etc.
 
-3. **Substitution format:** `%USER%` and `%PASS%` (percent-delimited).
+3. **Substitution format:** wrap keys in percent signs (`%VAR%`). Example: `%USER%`, `%PRIMARY_PASS%`.
 
-4. **Substitution happens only in URL strings** before fetching.
+4. **Substitution happens only in playlist and EPG URL strings** before fetching.
 
 5. **Shell-safe:** The `%...%` format is **not** expanded by any common shell (PowerShell, Bash, Zsh, CMD).
 
@@ -63,40 +69,40 @@ Use `--verbose` to see what's happening:
 
 ```
 [VERBOSE] .env file found: C:\path\to\.env
-[VERBOSE] Keys found: USER, PASS
-[VERBOSE] Playlist URL: replaced USER, PASS
+[VERBOSE] Keys found: USER, SECONDARY_TOKEN, PRIMARY_PASS
+[VERBOSE] Playlist URL: replaced USER, SECONDARY_TOKEN
 ```
 
 **Note:** Actual credential values are never printed in logs.
 
 ---
 
-## Why `%USER%` and `%PASS%`?
+## Why `%...%` placeholders?
 
 We use percent-delimited format because:
 
-- ? **PowerShell** does not expand `%...%` (unlike `$...` or `${...}`)
-- ? **Bash/Zsh** does not expand `%...%` 
-- ? **CMD** does not expand `%...%` in this context (URL query strings)
-- ? Works consistently across all platforms
+- PowerShell does not expand `%...%` (unlike `$...` or `${...}`)
+- Bash/Zsh do not expand `%...%`
+- CMD does not expand `%...%` in this context (URL query strings)
+- Works consistently across all platforms
 
 **Avoided formats:**
-- ? `$USER` / `$PASS` — Expanded by PowerShell and Bash
-- ? `${USER}` / `${PASS}` — Expanded by PowerShell (braced variable syntax)
+- `$USER` / `$PASS` - expanded by PowerShell and Bash
+- `${USER}` / `${PASS}` - expanded by PowerShell (braced variable syntax)
 
 ---
 
 ## Config File Mode
 
-When using a config file, place `.env` in the same directory:
+When using a config file, place `.env` in the same directoryâ€”this is the only directory the CLI will scan when `--config` is passed:
 
 ```
-/etc/iptv/
-  ??? config.yml
-  ??? .env
+iptv/scripts/
+  |- config.yaml
+  |- .env
 ```
 
-Example config with placeholders:
+Example config with placeholders that map to the `.env` keys:
 
 ```yaml
 profiles:
@@ -111,7 +117,7 @@ profiles:
 Command:
 
 ```bash
-iptv run --config /etc/iptv/config.yml --profile default
+iptv run --config iptv/scripts/config.yaml --profile default
 ```
 
 ---
@@ -144,8 +150,8 @@ This ensures that even if logs are shared or visible to others, your credentials
 
 **Solution:** 
 - Verify `.env` exists in the correct directory (use `--verbose` to see where CLI is looking)
-- Check that `.env` contains `USER=...` and `PASS=...` lines
-- Ensure you're using `%USER%` and `%PASS%` (with percent signs, not `$` or `${...}`)
+- Check that `.env` contains entries for every placeholder you reference (e.g., `PRIMARY_USER=...`, `SECONDARY_TOKEN=...`)
+- Ensure you're using `%USER%`, `%PRIMARY_USER%`, etc. (with percent signs, not `$` or `${...}`)
 
 ### Credentials not substituted
 **Problem:** `.env` file not found or in wrong location.
@@ -153,7 +159,7 @@ This ensures that even if logs are shared or visible to others, your credentials
 **Solution:** 
 - Verify `.env` is in current directory (or config directory).
 - Use `--verbose` to see where the CLI is looking for `.env`.
-- Check that `.env` contains `USER=...` and `PASS=...` lines.
+- Check that `.env` contains the specific keys referenced by your URLs.
 
 ### File permission errors
 **Problem:** `.env` file is not readable.

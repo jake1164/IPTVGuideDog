@@ -63,11 +63,13 @@ filters:
   excludeGroups: []                     # list<string>; removed even if included elsewhere
   excludeTitleRegex: "(?i)\\b(4k|uhd)\\b"  # string; .NET regex; optional
   dropListFile: "/config/drop-groups.txt"   # path to LF/CRLF text file, one group per line; optional
+  groupsFile: "/config/groups.txt"          # path for curated groups list (preferred destination for `iptv groups`)
 ```
 
 **Notes**
 - Matching is **exact** for group names (case-sensitive by default). Consider normalizing names in `mapping` if needed.
 - Regex uses .NET engine. Invalid regex → config validation error.
+- `iptv groups --config /path/config.yaml --profile my-profile` writes the curated group list to `filters.groupsFile` when it is set; otherwise it falls back to `filters.dropListFile`. That means your remove list stays aligned with the CLI workflow even when you drive everything from config files.
 
 ---
 
@@ -210,6 +212,41 @@ profiles:
   }
 }
 ```
+
+---
+
+## Threadfin Multi-Profile Example (YAML)
+```yaml
+profiles:
+  primary:
+    inputs:
+      playlist:
+        url: "https://provider-a.example/get.php?username=%PRIMARY_USER%&password=%PRIMARY_PASS%&type=m3u_plus"
+      epg:
+        url: "https://provider-a.example/xmltv.php?username=%PRIMARY_USER%&password=%PRIMARY_PASS%"
+        allowCompressed: true
+    filters:
+      includeGroups: ["USA | Sports", "USA | News"]
+      groupsFile: "/var/lib/iptv/m3u/primary.groups.txt"
+    output:
+      playlistPath: "/var/lib/iptv/m3u/primary.m3u"
+      epgPath: "/var/lib/iptv/m3u/primary.xml"
+
+  secondary:
+    inputs:
+      playlist:
+        url: "https://provider-b.example/api/m3u?user=%SECONDARY_USER%&token=%SECONDARY_TOKEN%"
+      epg:
+        url: "https://provider-b.example/api/xmltv?user=%SECONDARY_USER%&token=%SECONDARY_TOKEN%"
+    filters:
+      excludeGroups: ["VOD", "International"]
+      dropListFile: "/var/lib/iptv/m3u/secondary.remove.txt"
+    output:
+      playlistPath: "/var/lib/iptv/m3u/secondary.m3u"
+      epgPath: "/var/lib/iptv/m3u/secondary.xml"
+```
+
+Store this config alongside `iptv/scripts/.env` so the `%PRIMARY_*%` and `%SECONDARY_*%` placeholders are resolved. Running `iptv groups --config iptv/scripts/config.yaml --profile primary` updates `/var/lib/iptv/m3u/primary.groups.txt`, while the same command with `--profile secondary` falls back to `/var/lib/iptv/m3u/secondary.remove.txt` (your remove list). Filtering with `iptv run --config ... --profile ...` writes playlists/EPGs directly into `/var/lib/iptv/m3u/*.m3u` and `.xml` paths.
 
 ---
 

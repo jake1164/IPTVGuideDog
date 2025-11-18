@@ -18,7 +18,7 @@ IPTV providers often deliver **thousands of channels** across dozens of groups �
 
 ✅ **Filters playlists by channel groups** — keep what you want, drop the rest  
 ✅ **Supports live-only filtering** — isolate live streams from VOD/series  
-✅ **Manages credentials securely** — `.env` files keep secrets out of git  
+✅ **Manages credentials securely** — `.env` files keep secrets out of git and auto-substitute `%VAR%` tokens in URLs  
 ✅ **Preserves EPG data** — filtered guide matches your filtered channels  
 ✅ **Works cross-platform** — PowerShell, Bash, CMD, Docker  
 ✅ **Automatable** — perfect for cron jobs and scheduled updates  
@@ -69,7 +69,7 @@ iptv run \
 **Features:**
 - **Group filtering** — apply your curated `groups.txt` selections
 - **Live-only mode** — filter out VOD/series, keep only live streams
-- **Secure credential handling** — `.env` files auto-substitute `%USER%`/`%PASS%`
+- **Secure credential handling** — `.env` files auto-substitute any `%VAR%` tokens inside playlist/EPG URLs
 - **Atomic writes** — ensures output files are always valid (no partial writes)
 - **Verbose logging** — track exactly what's being filtered and why
 - **Config profiles** — store common setups in YAML for reuse
@@ -82,18 +82,22 @@ Stop embedding passwords in URLs or scripts! Use `.env` files:
 
 **`.env` file:**
 ```env
-USER=your_username
-PASS=your_password
+PRIMARY_USER=your_primary_username
+PRIMARY_PASS=your_primary_password
+SECONDARY_TOKEN=another_secret
 ```
+
+> Place `.env` next to your `config.yaml` (for example `iptv/scripts/.env`) when you run `iptv` with `--config`. Otherwise, the CLI reads `.env` from your current working directory.
 
 **Command:**
 ```bash
 iptv run --playlist-url "https://host/get.php?username=%USER%&password=%PASS%&type=m3u_plus" --out-playlist out.m3u
 ```
 
-- ✅ **Shell-safe** — `%USER%` works in PowerShell, Bash, CMD, Zsh  
+- ✅ **Shell-safe** — `%VAR%` placeholders work in PowerShell, Bash, CMD, Zsh  
 - ✅ **Git-ignored** — credentials never leave your machine  
-- ✅ **Zero-config mode** — just drop `.env` in your working directory  
+- ✅ **Deterministic search order** — `.env` lives next to your config when `--config` is used; otherwise the CLI reads the working directory  
+- ✅ **Multi-provider ready** — define as many keys as you want (`%PRIMARY_USER%`, `%SECONDARY_TOKEN%`, etc.) and they are auto-substituted inside playlist/EPG URLs
 
 📖 **[Full details in env_usage.md](docs/env_usage.md)**
 
@@ -122,6 +126,92 @@ iptv run --config config.yaml --profile default --live
 ```
 
 📖 **[Full config schema in config_spec.md](docs/config_spec.md)**
+
+### Config Quick Start (multi-profile automation)
+
+**1. Lay out secrets and directories**
+
+```bash
+mkdir -p iptv/scripts /var/lib/iptv/m3u
+cat <<'EOF' > iptv/scripts/.env
+PRIMARY_USER=alice@example.com
+PRIMARY_PASS=super-secret
+SECONDARY_USER=bob@example.com
+SECONDARY_TOKEN=another-secret-token
+EOF
+```
+
+Keeping `.env` next to `iptv/scripts/config.yaml` ensures the CLI picks it up automatically whenever you pass `--config iptv/scripts/config.yaml`.
+
+**2. Create `iptv/scripts/config.yaml` with multiple profiles**
+
+```yaml
+profiles:
+  primary:
+    inputs:
+      playlist:
+        url: "https://provider-a.example/get.php?username=%PRIMARY_USER%&password=%PRIMARY_PASS%&type=m3u_plus"
+      epg:
+        url: "https://provider-a.example/xmltv.php?username=%PRIMARY_USER%&password=%PRIMARY_PASS%"
+    filters:
+      groupsFile: "/var/lib/iptv/m3u/primary.groups.txt"
+    output:
+      playlistPath: "/var/lib/iptv/m3u/primary.m3u"
+      epgPath: "/var/lib/iptv/m3u/primary.xml"
+
+  secondary:
+    inputs:
+      playlist:
+        url: "https://provider-b.example/api/m3u?user=%SECONDARY_USER%&token=%SECONDARY_TOKEN%"
+      epg:
+        url: "https://provider-b.example/api/xmltv?user=%SECONDARY_USER%&token=%SECONDARY_TOKEN%"
+    filters:
+      dropListFile: "/var/lib/iptv/m3u/secondary.remove.txt"
+    output:
+      playlistPath: "/var/lib/iptv/m3u/secondary.m3u"
+      epgPath: "/var/lib/iptv/m3u/secondary.xml"
+```
+
+**3. Run each profile manually (great for testing)**
+
+```bash
+iptv run --config iptv/scripts/config.yaml --profile primary --live
+iptv run --config iptv/scripts/config.yaml --profile secondary --live
+```
+
+**4. Automate refreshes with cron**
+
+```bash
+*/30 * * * * cd /opt/IPTVGuideDog && iptv run --config iptv/scripts/config.yaml --profile primary --live
+15 * * * * cd /opt/IPTVGuideDog && iptv run --config iptv/scripts/config.yaml --profile secondary --live
+```
+
+**5. Or wire it up to systemd timers**
+
+```ini
+# /etc/systemd/system/iptv-primary.service
+[Unit]
+Description=Refresh IPTVGuideDog primary profile
+After=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/IPTVGuideDog
+ExecStart=/usr/local/bin/iptv run --config /opt/IPTVGuideDog/iptv/scripts/config.yaml --profile primary --live
+
+# /etc/systemd/system/iptv-primary.timer
+[Unit]
+Description=Run IPTVGuideDog primary profile every 30 minutes
+
+[Timer]
+OnUnitActiveSec=30min
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+```
+
+Enable the timer with `sudo systemctl enable --now iptv-primary.timer`. Repeat the service/timer pair for other profiles (e.g., `secondary`) and the CLI will continue to load `iptv/scripts/.env` because it sits next to the config file.
 
 ---
 
