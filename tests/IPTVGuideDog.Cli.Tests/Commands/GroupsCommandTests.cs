@@ -209,9 +209,11 @@ http://example.com/2";
         
         try
         {
-            var existingContent = @"######  This is a DROP list. Put a '#' in front of any group you want to KEEP.  ######
+            // Use current version to ensure version matches and no backup is created
+            var currentVersion = GroupsFileValidator.GetCurrentVersion();
+            var existingContent = $@"######  This is a DROP list. Put a '#' in front of any group you want to KEEP.  ######
 ######  Lines without '#' will be DROPPED. Blank lines are ignored.             ######
-######  Created with iptv version 0.40 ######
+######  Created with iptv version {currentVersion}                                          ######
 
 #Sports
 News";
@@ -239,7 +241,7 @@ http://example.com/2";
             
             Assert.AreEqual(0, result);
             
-            // Backup should have been deleted since nothing changed
+            // Backup should NOT exist since nothing changed (no new groups, version matches)
             var backupPath = $"{tmpFile}.bak";
             Assert.IsFalse(File.Exists(backupPath));
         }

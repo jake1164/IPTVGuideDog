@@ -1,0 +1,36 @@
+name: Code Coverage
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  coverage:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '10.x'
+    
+    - name: Restore dependencies
+      run: dotnet restore
+    
+    - name: Install coverlet
+      run: dotnet tool install --global coverlet.console
+    
+    - name: Run tests with coverage
+      run: dotnet test --no-restore --configuration Release /p:CollectCoverage=true /p:CoverletOutputFormat=lcov /p:CoverletOutput=./lcov.info
+    
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        files: ./lcov.info
+        fail_ci_if_error: false
+        verbose: true

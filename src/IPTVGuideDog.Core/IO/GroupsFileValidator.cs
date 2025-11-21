@@ -4,9 +4,9 @@ namespace IPTVGuideDog.Core.IO;
 
 public static class GroupsFileValidator
 {
-    private const string HeaderLine1 = "######  This is a DROP list. Put a '#' in front of any group you want to KEEP.  ######";
-    private const string HeaderLine2 = "######  Lines without '#' will be DROPPED. Blank lines are ignored.             ######";
-    private const string HeaderLine3 = "######  New groups are marked with '##' for easy identification.                ######";
+    private const string HeaderLine1 = "######  This is a DROP list. Put a '#' in front of any group you want to KEEP.    ######";
+    private const string HeaderLine2 = "######  Lines without '#' will be DROPPED. Blank lines are ignored.               ######";
+    private const string HeaderLine3 = "######  New groups are marked with '##' for easy identification.                  ######";
     private const string VersionPrefix = "######  Created with iptv version ";
     
     public static string GetCurrentVersion()
@@ -117,6 +117,7 @@ public static class GroupsFileValidator
         // Pad so the line (including trailing ' ######') is always 88 characters
         const int totalLength = 88;
         const string trailer = " ######";
+        
         var paddedVersionLine = versionLine.PadRight(totalLength - trailer.Length) + trailer;
         return
         [
