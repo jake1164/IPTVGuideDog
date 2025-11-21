@@ -24,7 +24,7 @@ public sealed class GroupSelectionFileTests
             var selection = GroupSelectionFile.LoadSelection(tempFile);
 
             CollectionAssert.AreEquivalent(
-                new[] { "Sports", "Movies" },
+                new[] { "Sports", "Documentary", "Movies" },
                 selection.Keep.ToList());
 
             CollectionAssert.AreEquivalent(
@@ -45,7 +45,7 @@ public sealed class GroupSelectionFileTests
     }
 
     [TestMethod]
-    public void LoadKeepSet_IgnoresPendingGroups()
+    public void LoadKeepSet_IncludesPendingGroups()
     {
         var tempFile = Path.GetTempFileName();
         try
@@ -54,7 +54,7 @@ public sealed class GroupSelectionFileTests
 
             var keep = GroupSelectionFile.LoadKeepSet(tempFile);
 
-            CollectionAssert.AreEquivalent(new[] { "Sports" }, keep.ToList());
+            CollectionAssert.AreEquivalent(new[] { "Sports", "Documentary" }, keep.ToList());
         }
         finally
         {

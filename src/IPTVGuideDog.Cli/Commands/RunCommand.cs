@@ -235,7 +235,6 @@ public sealed class RunCommand
         var selectedEntries = new List<M3uEntry>();
         var keepSet = groupSelection.Keep;
         var allSet = groupSelection.All;
-        var pendingSet = groupSelection.PendingReview;
         var droppedMissingGroup = 0;
         var droppedExcluded = 0;
 
@@ -246,12 +245,6 @@ public sealed class RunCommand
             if (string.IsNullOrWhiteSpace(group))
             {
                 droppedMissingGroup++;
-                continue;
-            }
-
-            if (pendingSet.Contains(group))
-            {
-                droppedExcluded++;
                 continue;
             }
 
@@ -329,7 +322,7 @@ public sealed class RunCommand
 
         if (interactive)
         {
-            _console.MarkupLine("[yellow]The following group(s) are marked with '##' and were skipped. Edit your groups file to promote them:[/]");
+            _console.MarkupLine("[yellow]The following new group(s) are marked with '##' and were included. Edit your groups file to drop them:[/]");
             foreach (var group in pendingInPlaylist)
             {
                 _console.MarkupLine($"  [cyan]{Markup.Escape(group)}[/]");
@@ -337,7 +330,7 @@ public sealed class RunCommand
         }
         else
         {
-            _stderr.WriteLine("The following group(s) are marked with '##' and were skipped:");
+            _stderr.WriteLine("The following new group(s) are marked with '##' and were included:");
             foreach (var group in pendingInPlaylist)
             {
                 _stderr.WriteLine($"  {group}");

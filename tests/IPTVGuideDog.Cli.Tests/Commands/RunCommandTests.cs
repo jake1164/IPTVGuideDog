@@ -84,6 +84,52 @@ public class RunCommandTests
         Assert.Contains("invalidGroupsFile.txt", exception.Message);
     }
 
+    [TestMethod]
+    public async Task ExecuteAsync_IncludesPendingReviewGroups()
+    {
+        var playlist = "#EXTM3U\n#EXTINF:-1 group-title=\"Pending\",Channel\nhttp://example.com/stream.ts\n";
+        var groupsPath = Path.GetTempFileName();
+        await File.WriteAllTextAsync(groupsPath, "##Pending\n");
+
+        try
+        {
+            var stdout = new StringWriter();
+            var stderr = new StringWriter();
+            var diagnostics = new StringWriter();
+            var httpClient = new HttpClient(new MockHttpMessageHandler(playlist));
+            var parser = new PlaylistParser();
+            var cmd = new RunCommand(stdout, stderr, diagnostics, httpClient, parser);
+            var context = new CommandContext(
+                CommandKind.Run,
+                new CommandOptionSet(new Dictionary<string, List<string>>()),
+                null,
+                null,
+                null,
+                new Dictionary<string, string>(),
+                "http://test",
+                null,
+                groupsPath,
+                null,
+                null,
+                null,
+                false,
+                false);
+
+            var result = await cmd.ExecuteAsync(context, CancellationToken.None);
+
+            Assert.AreEqual(ExitCodes.Success, result);
+            Assert.Contains("http://example.com/stream.ts", stdout.ToString());
+            Assert.Contains("Kept 1 channel(s).", stdout.ToString());
+        }
+        finally
+        {
+            if (File.Exists(groupsPath))
+            {
+                File.Delete(groupsPath);
+            }
+        }
+    }
+
     private static RunCommand CreateRunCommand(StringWriter? stdout = null)
     {
         return new RunCommand(stdout ?? new StringWriter(), new StringWriter(), new StringWriter(), new HttpClient(new MockHttpMessageHandler("#EXTM3U\n")), new PlaylistParser());
