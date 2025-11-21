@@ -28,6 +28,7 @@ public static class GroupSelectionFile
                     continue;
                 }
 
+                var isPending = line.StartsWith("##", StringComparison.Ordinal);
                 var normalized = line.TrimStart('#').Trim();
                 if (string.IsNullOrEmpty(normalized))
                 {
@@ -36,10 +37,9 @@ public static class GroupSelectionFile
 
                 all.Add(normalized);
 
-                if (line.StartsWith("##", StringComparison.Ordinal))
+                if (isPending)
                 {
                     pending.Add(normalized);
-                    continue;
                 }
 
                 if (line.StartsWith('#'))
