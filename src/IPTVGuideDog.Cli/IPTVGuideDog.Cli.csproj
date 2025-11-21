@@ -7,10 +7,12 @@
     <Nullable>enable</Nullable>
     <AssemblyName>iptv</AssemblyName>
     <!-- Version properties now inherited from Directory.Build.props -->
+    <!-- Explicitly NOT self-contained during normal builds -->
+    <SelfContained>false</SelfContained>
   </PropertyGroup>
 
-  <!-- Self-contained single-file publishing - ONLY during dotnet publish, not normal builds -->
-  <PropertyGroup Condition="'$(PublishSingleFile)' == 'true' AND '$(PublishProfile)' != ''">
+  <!-- Self-contained single-file publishing - ONLY when explicitly publishing -->
+  <PropertyGroup Condition="'$(PublishSingleFile)' == 'true'">
     <PublishSingleFile>true</PublishSingleFile>
     <SelfContained>true</SelfContained>
     <PublishTrimmed>true</PublishTrimmed>
