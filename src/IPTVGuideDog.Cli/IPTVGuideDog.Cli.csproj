@@ -9,8 +9,8 @@
     <!-- Version properties now inherited from Directory.Build.props -->
   </PropertyGroup>
 
-  <!-- Self-contained single-file publishing - only applies during publish -->
-  <PropertyGroup Condition="'$(Configuration)' == 'Release' OR '$(PublishSingleFile)' == 'true'">
+  <!-- Self-contained single-file publishing - ONLY during dotnet publish, not normal builds -->
+  <PropertyGroup Condition="'$(PublishSingleFile)' == 'true' AND '$(PublishProfile)' != ''">
     <PublishSingleFile>true</PublishSingleFile>
     <SelfContained>true</SelfContained>
     <PublishTrimmed>true</PublishTrimmed>

@@ -22,15 +22,8 @@ jobs:
     - name: Restore dependencies
       run: dotnet restore
     
-    - name: Install coverlet
-      run: dotnet tool install --global coverlet.console
+    - name: Build
+      run: dotnet build --no-restore --configuration Release -v minimal
     
-    - name: Run tests with coverage
-      run: dotnet test --no-restore --configuration Release /p:CollectCoverage=true /p:CoverletOutputFormat=lcov /p:CoverletOutput=./lcov.info
-    
-    - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v3
-      with:
-        files: ./lcov.info
-        fail_ci_if_error: false
-        verbose: true
+    - name: Run tests
+      run: dotnet test --no-build --configuration Release --logger "console;verbosity=minimal"
