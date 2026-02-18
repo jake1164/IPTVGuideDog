@@ -1,26 +1,54 @@
 # Roadmap
 
-## V1 — Stable Catalog + Proxy Streaming
-- DB-backed rules configured via GUI
-- Authoritative numbering
-- Stable channel identity
-- Snapshot-based serving + last-known-good
-- /stream proxy is relay-only (no ffmpeg)
+---
 
-## V2 — Diagnostics + Optional Auth
-- UI:
-  - “what changed and why” diff view
-  - missing EPG / duplicate channel reports
-- Optional Basic Auth toggle for UI and/or endpoints
+## V1 — Stable Catalog + Proxy Streaming + Preview UX
 
-## V3 — Provider Redundancy (Per-channel Failover)
-Goal: CBS(A) with CBS(B) fallback, etc.
-- DB stores per-channel source preference:
-  - primary provider source
-  - fallback sources ordered
-- /stream detects stream failures and switches sources
-- status exposes per-channel/provider health signals
+Deliver:
 
-## V4 — Buffering / Caching
-- optional buffering/caching layer (ffmpeg or segment cache)
-- target: reduce client buffering, improve stream stability
+- Provider configuration via GUI
+- Profile-scoped outputs:
+  - /m3u/<output>.m3u
+  - /xmltv/<output>.xml
+- Snapshot-based serving with last-known-good preservation
+- Service-owned `/stream/<streamKey>` endpoint
+- Provider preview UX:
+  - Enter provider endpoint
+  - Validate connectivity
+  - Preview groups and channel counts
+  - “Refresh & Preview” action
+
+Notes:
+
+- Channel identity and authoritative numbering are designed into schema.
+- If numbering cannot be fully stabilized on day one, pass-through ordering is allowed temporarily.
+- LAN-only deployment is acceptable.
+- Authentication remains optional in V2.
+
+---
+
+## V2 — Stability & Diagnostics
+
+- Diff view (“what changed from provider”)
+- Missing EPG detection
+- Duplicate detection
+- Basic auth (optional)
+- Operational dashboards
+
+---
+
+## V3 — Multi-Provider Mapping + Redundancy
+
+- Canonical channels mapped to multiple provider sources
+- Priority + fallback
+- Health scoring
+- Redundancy switching
+
+---
+
+## V4 — Performance Enhancements
+
+- Optional buffering
+- Optional stream relay improvements
+- Optional caching
+- No breaking changes to playlist contract
