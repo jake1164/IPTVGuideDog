@@ -13,4 +13,10 @@
     <RepositoryUrl>https://github.com/jake1164/IPTVGuideDog</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
   </PropertyGroup>
+
+  <!-- Normalize build output paths on non-Windows to avoid literal backslash directories (for example, "bin\Debug"). -->
+  <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Linux')) Or $([MSBuild]::IsOSPlatform('OSX'))">
+    <BaseIntermediateOutputPath>obj/</BaseIntermediateOutputPath>
+    <BaseOutputPath>bin/</BaseOutputPath>
+  </PropertyGroup>
 </Project>

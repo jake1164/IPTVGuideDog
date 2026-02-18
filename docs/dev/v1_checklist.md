@@ -26,25 +26,30 @@ Implement per docs/DB_SCHEMA.md.
 
 Minimum V1 tables:
 
-- [ ] providers
-- [ ] profiles
-- [ ] profile_providers
-- [ ] fetch_runs
-- [ ] provider_groups
-- [ ] provider_channels
-- [ ] snapshots (profile-scoped)
-- [ ] stream_keys (stable per profile+channel)
+- [x] providers
+- [x] profiles
+- [x] profile_providers
+- [x] fetch_runs
+- [x] provider_groups
+- [x] provider_channels
+- [x] snapshots (profile-scoped)
+- [x] stream_keys (stable per profile+channel)
 
 Optional but schema-present:
 
-- [ ] canonical_channels
-- [ ] channel_sources
-- [ ] epg_channel_map
+- [x] canonical_channels
+- [x] channel_sources
+- [x] epg_channel_map
 
 Constraints:
 - Snapshots scoped to profile_id
 - stream_keys NOT tied to snapshot_id
 - Last-known-good snapshot preserved
+
+Verification status:
+- [x] EF migration generated and applied successfully against SQLite
+- [x] Partial unique index for `(provider_id, provider_channel_key)` verified with `WHERE provider_channel_key IS NOT NULL`
+- [x] Delete behavior matrix verified via migration SQL and persistence tests
 
 Locked schema decisions (authoritative):
 - D1: Enforce `UNIQUE(profile_id, channel_number)` on `canonical_channels`.

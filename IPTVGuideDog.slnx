@@ -4,5 +4,6 @@
   <Project Path="src\IPTVGuideDog.Core\IPTVGuideDog.Core.csproj" />
   <Project Path="src\IPTVGuideDog.Web\IPTVGuideDog.Web.csproj" />
   <Project Path="tests\IPTVGuideDog.Cli.Tests\IPTVGuideDog.Cli.Tests.csproj" />
+  <Project Path="tests\IPTVGuideDog.Web.Tests\IPTVGuideDog.Web.Tests.csproj" />
 </Solution>
 
