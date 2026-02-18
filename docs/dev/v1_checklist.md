@@ -46,6 +46,19 @@ Constraints:
 - stream_keys NOT tied to snapshot_id
 - Last-known-good snapshot preserved
 
+Locked schema decisions (authoritative):
+- D1: Enforce `UNIQUE(profile_id, channel_number)` on `canonical_channels`.
+- D2: Enforce `provider_channels(provider_id, provider_channel_key)` uniqueness only when key is present with a partial unique index (`provider_channel_key IS NOT NULL`).
+- D2 ingest invariant: normalize missing/empty/whitespace `provider_channel_key` to `NULL` before persistence.
+- D3 delete behavior policy:
+- `providers` -> `fetch_runs`/`provider_groups`/`provider_channels`/`profile_providers`/`channel_sources`: `RESTRICT`
+- `profiles` -> `canonical_channels`/`snapshots`/`stream_keys`/`epg_channel_map`: `RESTRICT`
+- `profiles` -> `profile_providers`/`channel_match_rules`: `CASCADE`
+- `provider_groups` -> `provider_channels.provider_group_id`: `SET NULL`
+- `fetch_runs` -> `provider_channels.last_fetch_run_id`: `RESTRICT`
+- `canonical_channels` -> `channel_sources`/`stream_keys`/`epg_channel_map`: `CASCADE`
+- `provider_channels` -> `channel_sources.provider_channel_id`: `RESTRICT`
+
 ---
 
 ## 2) Provider Configuration UI

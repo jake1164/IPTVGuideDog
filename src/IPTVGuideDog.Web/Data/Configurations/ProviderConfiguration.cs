@@ -1,0 +1,28 @@
+using IPTVGuideDog.Web.Data.Entities;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+
+namespace IPTVGuideDog.Web.Data.Configurations;
+
+public sealed class ProviderConfiguration : IEntityTypeConfiguration<Provider>
+{
+    public void Configure(EntityTypeBuilder<Provider> builder)
+    {
+        builder.ToTable("providers");
+
+        builder.HasKey(x => x.ProviderId);
+        builder.Property(x => x.ProviderId).HasColumnName("provider_id");
+        builder.Property(x => x.Name).HasColumnName("name").IsRequired();
+        builder.Property(x => x.Enabled).HasColumnName("enabled").IsRequired();
+        builder.Property(x => x.PlaylistUrl).HasColumnName("playlist_url").IsRequired();
+        builder.Property(x => x.XmltvUrl).HasColumnName("xmltv_url");
+        builder.Property(x => x.HeadersJson).HasColumnName("headers_json");
+        builder.Property(x => x.UserAgent).HasColumnName("user_agent");
+        builder.Property(x => x.TimeoutSeconds).HasColumnName("timeout_seconds").HasDefaultValue(20);
+        builder.Property(x => x.CreatedUtc).HasColumnName("created_utc").IsRequired();
+        builder.Property(x => x.UpdatedUtc).HasColumnName("updated_utc").IsRequired();
+
+        builder.HasIndex(x => x.Name).IsUnique();
+        builder.HasIndex(x => x.Enabled).HasDatabaseName("idx_providers_enabled");
+    }
+}
