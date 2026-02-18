@@ -53,6 +53,10 @@ TestResults/
 *.coverage
 *.coveragexml
 
+# AI and local artifacts
+.ai_docs/
+.local_artifacts/
+
 # Temporary files
 *.tmp
 *.temp

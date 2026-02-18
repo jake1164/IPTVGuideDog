@@ -15,12 +15,12 @@
     },
     "Groups for Onyx": {
       "commandName": "Project",
-      "commandLineArgs": "groups --config .config/config.yaml --profile onyx --verbose --out-groups TestResults/onyx_remove.txt",
+      "commandLineArgs": "groups --config .config/config.yaml --profile onyx --verbose --out-groups .local_artifacts/onyx_remove.txt",
       "workingDirectory": "$(ProjectDir)../.."
     },
     "Groups for Delta": {
       "commandName": "Project",
-      "commandLineArgs": "groups --config .config/config.yaml --profile delta --verbose --out-groups TestResults/delta_remove.txt",
+      "commandLineArgs": "groups --config .config/config.yaml --profile delta --verbose --out-groups .local_artifacts/delta_remove.txt",
       "workingDirectory": "$(ProjectDir)../.."
     },
     "Version": {
@@ -30,7 +30,7 @@
     },
     "Groups cmd for Delta": {
       "commandName": "Project",
-      "commandLineArgs": "groups --playlist-url %DELTA_URL%/get.php?username=%DELTA_USER%&password=%DELTA_PASS%&type=m3u_plus --verbose --out-groups TestResults/delta_remove.txt",
+      "commandLineArgs": "groups --playlist-url %DELTA_URL%/get.php?username=%DELTA_USER%&password=%DELTA_PASS%&type=m3u_plus --verbose --out-groups ..\\.local_artifacts\\delta_remove.txt",
       "workingDirectory": "D:\\github\\IPTVGuideDog\\.config"
     }
   }
