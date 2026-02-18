@@ -2,83 +2,27 @@
 
 ## Purpose
 A single container provides:
-- Web UI for configuration & status
-- HTTP endpoints consumed by IPTV clients:
-  - playlist (M3U)
-  - guide (XMLTV)
-  - service-owned stream endpoint (/stream/*)
-- background refresh and snapshot publishing
+- Web UI (configuration + status)
+- HTTP endpoints for clients:
+  - M3U (playlist)
+  - XMLTV (guide)
+  - Stream proxy (/stream/*)
+- Background refresh that builds snapshots and serves last-known-good
 
-## Component Overview (single container)
+## Core Concepts
+- Provider: upstream source of channels (N providers supported)
+- Canonical Channel: stable identity representing a channel concept
+- Lineup (Profile): user-facing channel list exposed via its own endpoint
+- StreamKey: stable forever per (lineup, canonical channel)
+- Snapshot: atomic published output set for a lineup
 
-Clients (NextPVR, Jellyfin, Plex, xTeVe, others)
-        |
-        v
-+--------------------------------------------------+
-| IPTVGuideDog Container                            |
-|                                                  |
-|  1) Web UI (Blazor)                               |
-|     - edits config + rules stored in DB           |
-|     - shows refresh status + diagnostics          |
-|                                                  |
-|  2) Service Host (HTTP)                           |
-|     - /m3u/<output>.m3u                           |
-|     - /xmltv/<output>.xml                         |
-|     - /stream/<streamKey>                         |
-|     - /health, /status                             |
-|                                                  |
-|  3) Background Worker                             |
-|     - scheduled refresh                            |
-|     - builds snapshot atomically                  |
-|     - preserves last-known-good                   |
-+--------------------------------------------------+
-        |
-        v
-Persistent Volume
- - guidedog.db (sqlite: config/state)
- - snapshots/
-    - playlist.m3u
-    - epg.xml
-    - channelIndex.json
-    - status.json
- - logs/
+## Key V1 Requirements
+- Stable identity: canonical channels must not churn on refresh.
+- Authoritative numbering: tvg-chno is owned by the lineup rules.
+- Last-known-good snapshots: refresh failures do not break clients.
+- Stream proxy required: playlists point to /stream/* URLs (relay-only in V1).
 
-## Key Architectural Rules
-
-### R1 — Stable Channel Identity
-- Each published channel is represented by a canonical channel ID stored in the DB.
-- Refresh must not generate new IDs for “the same channel” unless an admin explicitly remaps it.
-- IDs must not be derived from list ordering or volatile provider identifiers.
-
-### R2 — Authoritative Channel Numbering
-- The system is the authority for channel numbers (tvg-chno).
-- Numbers come from DB rules and remain stable across refreshes.
-- Output ordering is primarily by channel number.
-
-### R3 — Snapshot-based Serving (Last-known-good)
-- The service always serves an “active snapshot” (playlist+xmltv+index+status).
-- Refresh produces a new snapshot in staging and swaps it to active only after validation.
-- If refresh fails, the active snapshot remains unchanged.
-
-### R4 — Service-owned /stream
-- Playlist stream URLs must be owned by this service:
-  - /stream/<streamKey>
-- /stream resolves streamKey -> canonical channel -> selected source.
-- The specific implementation (redirect vs relay) is an internal detail and may evolve without changing the playlist contract.
-
-## Data Flow
-
-### Refresh Cycle
-Provider fetch (playlist + xmltv)
-  -> parse
-  -> normalize
-  -> apply DB rules (filters, grouping, naming, numbering)
-  -> resolve/match EPG where possible
-  -> build snapshot files
-  -> validate snapshot
-  -> swap to active
-
-### Request Cycle
-- /m3u/*.m3u serves active playlist snapshot
-- /xmltv/*.xml serves active xmltv snapshot
-- /stream/* serves the playable stream for the channel defined by the active snapshot
+## V1 Client Contract
+- Playlist includes url-tvg pointing at this service’s XMLTV endpoint.
+- Playlist stream URLs point to this service’s /stream/* endpoint.
+- Clients do not consume raw provider URLs.
