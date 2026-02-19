@@ -1,25 +1,23 @@
 # Roadmap
 
-## V1 — Stability + Compatibility
-- DB-backed GUI configuration
-- Lineups (profiles) as separate endpoints
-- Dynamic Groups (checkbox include + auto-update)
-- Per-lineup numbering (start number) + pinned numbers
-- New channels inbox
-- Stable canonical identity
-- Stable per-lineup stream keys
-- Snapshot + last-known-good serving
-- Stream proxy relay (no buffering)
+## V1 — Passthrough + Stability
+- Provider configuration (URL, credentials, refresh settings)
+- Active provider selection (single active provider at a time)
+- Provider group preview (read-only catalog browse)
+- Snapshot-based serving (staged → active lifecycle)
+- Last-known-good behavior on refresh failure
+- M3U + XMLTV compatibility endpoints (`/m3u/guidedog.m3u`, `/xmltv/guidedog.xml`)
+- Stream proxy relay (`/stream/<streamKey>`, relay-only, no buffering)
+- Stable stream keys (provider switch regenerates; warning shown to user)
 
-## V2 — Security + Diagnostics
-- Optional basic auth for UI and/or endpoints
-- “What changed and why” diff view
-- Better new-channel categorization and dedupe suggestions
+## V2 — Lineup Shaping
+- Group inclusion rules (select which groups appear in your lineup)
+- Channel numbering (start ranges, pinned numbers, overflow handling)
+- New channels inbox (review and approve newly discovered channels before publishing)
+- Dynamic groups (auto add/drop for rotating sports or event feeds)
+- Provider switch assistance (diff view + optional manual channel mapping hints)
 
-## V3 — Multi-source redundancy (failover)
-- Multiple sources per canonical channel (many providers)
-- Per-lineup preferred source order
-- Failover in stream proxy on errors
-
-## V4 — Buffering / caching
-- Optional buffering/caching to improve playback stability
+## Future
+- Optional auth for UI and endpoints
+- Change history / diff view
+- Additional diagnostic and operational tooling

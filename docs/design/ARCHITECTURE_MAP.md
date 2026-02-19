@@ -10,7 +10,7 @@ A single container provides:
 - Background refresh that builds snapshots and serves last-known-good
 
 ## Core Concepts
-- Provider: upstream source of channels (N providers supported)
+- Provider: upstream source of channels (single active provider in Core)
 - Canonical Channel: stable identity representing a channel concept
 - Lineup (Profile): user-facing channel list exposed via its own endpoint
 - StreamKey: stable forever per (lineup, canonical channel)
@@ -23,6 +23,6 @@ A single container provides:
 - Stream proxy required: playlists point to /stream/* URLs (relay-only in V1).
 
 ## V1 Client Contract
-- Playlist includes url-tvg pointing at this service’s XMLTV endpoint.
-- Playlist stream URLs point to this service’s /stream/* endpoint.
+- Playlist includes url-tvg pointing at this service's XMLTV endpoint.
+- Playlist stream URLs point to this service's /stream/* endpoint.
 - Clients do not consume raw provider URLs.

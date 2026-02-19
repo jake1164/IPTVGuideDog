@@ -105,13 +105,14 @@ Locked schema decisions (authoritative):
 
 ## 5) Serving Endpoints
 
-- [ ] GET /m3u/<output>.m3u
-- [ ] GET /xmltv/<output>.xml
+- [ ] GET /m3u/guidedog.m3u
+- [ ] GET /xmltv/guidedog.xml
 - [ ] GET /stream/<streamKey>
 - [ ] GET /status
 - [ ] GET /health
 
 Notes:
+- Core locks output name to `guidedog` (i.e., `/m3u/guidedog.m3u`, `/xmltv/guidedog.xml`)
 - /stream implementation internal (relay for V1)
 - Playlist must reference /stream/<streamKey>
 - Snapshot must be used for serving
@@ -133,7 +134,7 @@ Notes:
 - [ ] Volume mounts for DB + snapshots
 - [ ] Smoke test:
   - curl /health
-  - curl /m3u/<output>.m3u
+  - curl /m3u/guidedog.m3u
   - stream via /stream
 
 ---

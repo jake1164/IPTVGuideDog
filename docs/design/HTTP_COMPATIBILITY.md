@@ -5,6 +5,14 @@
 - The service controls channel identity and numbering to avoid DVR/guide churn.
 - The playlist and stream URL contract is stable even if internal implementation changes.
 
+## Endpoint Naming
+
+The service uses lineup-scoped endpoint paths. In Core, the lineup name is fixed to `guidedog`:
+
+- `/m3u/guidedog.m3u`
+- `/xmltv/guidedog.xml`
+- `/stream/<streamKey>`
+
 ## V1 Endpoints (Required)
 
 ### Health
@@ -22,9 +30,9 @@
     - degraded flags
 
 ### Playlist (M3U)
-- GET /m3u/<output>.m3u
+- GET /m3u/guidedog.m3u
   - MUST include:
-    - #EXTM3U url-tvg="http(s)://<host>/xmltv/<output>.xml" x-tvg-url="..."
+    - #EXTM3U url-tvg="http(s)://<host>/xmltv/guidedog.xml" x-tvg-url="..."
   - Each channel entry SHOULD include:
     - tvg-chno (authoritative)
     - tvg-name (canonical display name)
@@ -35,7 +43,7 @@
     - http(s)://<host>/stream/<streamKey>
 
 ### Guide (XMLTV)
-- GET /xmltv/<output>.xml
+- GET /xmltv/guidedog.xml
   - XMLTV aligned with published channels
   - Channel ids should be stable over time for canonical channels
 

@@ -16,23 +16,23 @@ Most users only need a small, carefully selected subset of those channels.
 
 Managing that scale can be difficult:
 
-- Massive group lists with mixed languages  
-- Constantly rotating sports or event feeds  
-- Temporary PPV channels  
-- Duplicate regional variations  
-- Unclear mapping between configuration and published output  
-- Hard-to-understand numbering behavior  
+- Massive group lists with mixed languages
+- Constantly rotating sports or event feeds
+- Temporary PPV channels
+- Duplicate regional variations
+- Unclear mapping between configuration and published output
+- Hard-to-understand numbering behavior
 
 IPTVGuideDog is designed to make large IPTV catalogs manageable.
 
 It focuses on:
 
-- Clear group selection  
-- Explicit inclusion rules  
-- Controlled channel numbering  
-- Stable channel identity  
-- Transparent publishing  
-- Predictable refresh behavior  
+- Clear group selection
+- Explicit inclusion rules
+- Controlled channel numbering
+- Stable channel identity
+- Transparent publishing
+- Predictable refresh behavior
 
 The goal is simple:
 
@@ -46,14 +46,14 @@ IPTVGuideDog is a lineup management system for IPTV providers.
 
 It:
 
-- Aggregates one or more IPTV providers  
-- Normalizes channels into canonical identities  
-- Allows you to define controlled lineups  
-- Preserves stream key stability  
-- Protects DVR mappings from churn  
-- Publishes compatibility endpoints expected by IPTV clients  
+- Connects to your IPTV provider
+- Normalizes channels into canonical identities
+- Allows you to define a controlled lineup
+- Preserves stream key stability
+- Protects DVR mappings from churn
+- Publishes compatibility endpoints expected by IPTV clients
 
-It is not just a playlist filter.  
+It is not just a playlist filter.
 It is a system for managing IPTV catalogs at scale.
 
 ---
@@ -66,11 +66,11 @@ The CLI was the first component and remains useful for automation and scripting.
 
 It supports:
 
-- Provider playlist fetching  
-- Group discovery  
-- M3U filtering  
-- XMLTV filtering  
-- Secure `.env` credential handling  
+- Provider playlist fetching
+- Group discovery
+- M3U filtering
+- XMLTV filtering
+- Secure `.env` credential handling
 
 See: `docs/CLI.md`
 
@@ -80,13 +80,12 @@ See: `docs/CLI.md`
 
 The service layer introduces:
 
-- Database-backed configuration  
-- Lineups (profiles)  
-- Group-based inclusion rules  
-- Stable numbering rules  
-- Snapshot lifecycle management  
-- HTTP compatibility endpoints  
-- Stream relay proxy  
+- Database-backed configuration
+- Group-based inclusion rules
+- Stable numbering rules
+- Snapshot lifecycle management
+- HTTP compatibility endpoints
+- Stream relay proxy
 
 See: `docs/SERVICE.md`
 
@@ -96,21 +95,21 @@ See: `docs/SERVICE.md`
 
 IPTVGuideDog publishes endpoints compatible with common IPTV clients:
 
-- `/m3u/<profile>`
-- `/xmltv/<profile>`
+- `/m3u/guidedog.m3u`
+- `/xmltv/guidedog.xml`
 - `/stream/<streamKey>`
 
-See: `docs/HTTP_COMPATIBILITY.md`
+See: `docs/design/HTTP_COMPATIBILITY.md`
 
 ---
 
 ## Design Principles
 
-- Explicit over implicit  
-- Controlled over automatic  
-- Transparent over opaque  
-- Scalable for large provider catalogs  
-- Self-hosted and privacy-respecting  
+- Explicit over implicit
+- Controlled over automatic
+- Transparent over opaque
+- Scalable for large provider catalogs
+- Self-hosted and privacy-respecting
 
 ---
 
@@ -118,20 +117,18 @@ See: `docs/HTTP_COMPATIBILITY.md`
 
 IPTVGuideDog follows an open-core model.
 
-The current focus is delivering a stable, fully usable self-hosted lineup manager. Optional extensions may be introduced in future releases.
+The current focus is delivering a stable, fully usable self-hosted lineup manager. Advanced features may be introduced in future releases.
 
 ---
 
 ## License
 
-Core: Apache License 2.0  
+Core: Apache License 2.0
 See `LICENSE` for details.
-
-Optional extensions may be licensed separately in the future.
 
 ---
 
 ## Status
 
-The CLI is stable and usable today.  
+The CLI is stable and usable today.
 The service layer is under active development with an architecture-first approach.

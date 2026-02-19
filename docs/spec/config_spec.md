@@ -3,8 +3,8 @@
 This document defines the **shared configuration schema** used by the CLI, Blazor Server app, and Docker image. Keep it source‑of‑truth so all entry points behave identically.
 
 - **Formats supported:** YAML (preferred) and JSON
-- **Profiles:** Multiple profiles may be defined; select one via CLI `--profile` or server settings
-- **Env substitution:** `${ENV_VAR}` placeholders inside string fields will be expanded
+- **Profiles:** Multiple named configurations may be defined for the CLI; select one via `--profile`. The service uses the active provider directly.
+- **Env substitution:** `%VAR%` placeholders inside string fields will be replaced with values from the `.env` file
 
 ---
 
@@ -29,18 +29,17 @@ Holds source locations and download settings for playlist and EPG.
 ```yaml
 inputs:
   playlist:
-    url: "${PROVIDER_PLAYLIST_URL}"   # string, required
-    headers:                           # map<string,string>, optional
+    url: "%PROVIDER_PLAYLIST_URL%"   # string, required
+    headers:                          # map<string,string>, optional
       User-Agent: "IPTVGuideDog/1.0"
-      Authorization: "Bearer ${PLAYLIST_TOKEN}"  # if needed
-    timeoutSeconds: 30                 # int, optional (default 30)
-    retries: 3                         # int, optional (default 3)
-    maxDownloadMb: 200                 # int, optional; safety cap
+    timeoutSeconds: 30                # int, optional (default 30)
+    retries: 3                        # int, optional (default 3)
+    maxDownloadMb: 200                # int, optional; safety cap
 
   epg:
-    url: "${PROVIDER_EPG_URL}"        # string, optional (omit to skip)
+    url: "%PROVIDER_EPG_URL%"        # string, optional (omit to skip)
     headers: {}
-    allowCompressed: true              # bool, optional (default true) – autodetect .gz/.zip
+    allowCompressed: true             # bool, optional (default true) – autodetect .gz/.zip
     timeoutSeconds: 60
     retries: 3
     maxDownloadMb: 500
@@ -128,14 +127,14 @@ logging:
 ---
 
 ## Environment Variable Expansion
-- Any string field may contain `${NAME}`; values are read from the process environment **after** `--env-file` is loaded (if provided).
+- Any string field may contain `%NAME%`; values are read from the `.env` file (see `docs/spec/env_usage.md`).
 - Undefined variables → validation error, unless the entire field is optional and omitted by design.
+- The `%VAR%` format is shell-safe: not expanded by PowerShell, Bash, Zsh, or CMD.
 
 **Example `.env`**
 ```
 PROVIDER_PLAYLIST_URL=https://example.test/get.php?username=u&password=p&type=m3u_plus&output=ts
 PROVIDER_EPG_URL=https://example.test/xmltv.php?username=u&password=p
-PLAYLIST_TOKEN=abc123
 ```
 
 ---
@@ -146,11 +145,11 @@ profiles:
   default:
     inputs:
       playlist:
-        url: "${PROVIDER_PLAYLIST_URL}"
+        url: "%PROVIDER_PLAYLIST_URL%"
         headers:
           User-Agent: "IPTVGuideDog/1.0"
       epg:
-        url: "${PROVIDER_EPG_URL}"
+        url: "%PROVIDER_EPG_URL%"
         allowCompressed: true
 
     filters:
@@ -185,12 +184,12 @@ profiles:
     "default": {
       "inputs": {
         "playlist": {
-          "url": "${PROVIDER_PLAYLIST_URL}",
+          "url": "%PROVIDER_PLAYLIST_URL%",
           "headers": { "User-Agent": "IPTVGuideDog/1.0" },
           "timeoutSeconds": 30,
           "retries": 3
         },
-        "epg": { "url": "${PROVIDER_EPG_URL}", "allowCompressed": true }
+        "epg": { "url": "%PROVIDER_EPG_URL%", "allowCompressed": true }
       },
       "filters": {
         "includeGroups": ["USA | News", "USA | Sports"],
@@ -215,7 +214,7 @@ profiles:
 
 ---
 
-## Threadfin Multi-Profile Example (YAML)
+## Multi-Profile CLI Example (YAML)
 ```yaml
 profiles:
   primary:
@@ -279,4 +278,3 @@ Store this config alongside `iptv/scripts/.env` so the `%PRIMARY_*%` and `%SECON
 - `scheduling:` – cron/interval controls for server/daemon modes
 
 Keep existing names stable; add new optional fields rather than renaming.
-

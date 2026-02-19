@@ -1,5 +1,9 @@
 # Numbering Rules (tvg-chno) — Locked Behavior
 
+> **Scope: V2** — These rules describe channel numbering behavior planned for V2 lineup shaping. V1 passes through channel numbers as-is from the provider.
+
+---
+
 ## Authoritative numbering is per-lineup
 Each lineup controls its own channel numbers (tvg-chno).
 Canonical channels do not own global channel numbers.
@@ -18,7 +22,7 @@ Channels may also have a pinned number (explicit number set by user).
 4) Overflow (when placement cannot be resolved)
 
 ## Allocation Rules
-- Group numbering uses “Start Number only” (no hard cap).
+- Group numbering uses "Start Number only" (no hard cap).
 - Allocation picks the next available number upward.
 - Allocation skips numbers already taken (especially pinned numbers).
 - Existing pinned numbers never move.

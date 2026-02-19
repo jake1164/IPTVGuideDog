@@ -1,18 +1,14 @@
 # Lineup Rules (User-Facing Model)
 
-## Lineup = “Channel List for a Device/Room”
-Users can create multiple lineups (profiles), each with its own endpoint:
-- /m3u/default
-- /m3u/livingroom
-- /m3u/mancave
+> **Scope: V2** — These rules describe lineup shaping behavior planned for V2. V1 publishes a single pass-through lineup at `/m3u/guidedog.m3u` with no shaping applied.
 
-## Cloning
-When creating a new lineup, the user selects a lineup to clone from.
-Cloning copies:
-- enabled groups/channels
-- group start numbers
-- pinned channel numbers
-- ordering and overrides
+---
+
+## Lineup = Published Channel Set
+
+Core publishes a single lineup at a well-known endpoint:
+- /m3u/guidedog.m3u
+- /xmltv/guidedog.xml
 
 ## Dynamic Groups (Auto-update)
 Each lineup shows a list of groups with a checkbox:
@@ -23,11 +19,11 @@ When a group is checked:
 - channels in that provider group are automatically added/removed as they appear/disappear upstream
 - this reduces user babysitting for volatile sports/PPV content
 
-This is called “Dynamic Group” (or “Auto-update group”) in the UI.
+This is called "Dynamic Group" (or "Auto-update group") in the UI.
 
 ## New Channels Inbox
 Newly discovered channels are NOT automatically added to lineups by default.
-They appear in a “New Channels” list so the user can review.
+They appear in a "New Channels" list so the user can review.
 
 Exception:
 - if a channel belongs to an enabled Dynamic Group in a lineup, it is auto-added to that lineup.
