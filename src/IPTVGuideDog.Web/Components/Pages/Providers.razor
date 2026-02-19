@@ -1,0 +1,484 @@
+@page "/providers"
+@using System.Text
+@using System.Text.Json
+@using IPTVGuideDog.Web.Contracts.Providers
+@inject HttpClient Http
+
+<PageTitle>Providers</PageTitle>
+
+<MudPaper Class="pa-6" Elevation="1">
+    <MudText Typo="Typo.h5" Class="mb-2">Providers</MudText>
+    <MudText Typo="Typo.body2">Configure upstream playlists, associate a profile, and preview discovered groups/channels.</MudText>
+</MudPaper>
+
+@if (!string.IsNullOrWhiteSpace(_error))
+{
+    <MudAlert Severity="Severity.Error" Variant="Variant.Outlined" Class="mt-4">@_error</MudAlert>
+}
+
+<MudGrid Class="mt-4" Spacing="3">
+    <MudItem xs="12" lg="5">
+        <MudPaper Class="pa-4" Elevation="1">
+            <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-3">
+                <MudText Typo="Typo.h6">@(_isEditing ? "Edit Provider" : "Add Provider")</MudText>
+                @if (_isEditing)
+                {
+                    <MudButton Variant="Variant.Text" OnClick="ResetForm">Cancel Edit</MudButton>
+                }
+            </MudStack>
+
+            <MudForm @ref="_form">
+                <MudStack Spacing="2">
+                    <MudTextField Label="Name" @bind-Value="_model.Name" Required="true" RequiredError="Name is required." />
+                    <MudTextField Label="Playlist URL" @bind-Value="_model.PlaylistUrl" Required="true" RequiredError="Playlist URL is required." />
+                    <MudTextField Label="XMLTV URL (optional)" @bind-Value="_model.XmltvUrl" />
+                    <MudTextField Label="Headers JSON (optional)" @bind-Value="_model.HeadersJson" Lines="3" />
+                    <MudTextField Label="User Agent (optional)" @bind-Value="_model.UserAgent" />
+                    <MudNumericField T="int" Label="Timeout Seconds" @bind-Value="_model.TimeoutSeconds" Min="1" Max="300" />
+                    <MudSelect T="string" Label="Associated Profile (V1 single-select)" @bind-Value="_model.ProfileId">
+                        <MudSelectItem T="string" Value="@string.Empty">(None)</MudSelectItem>
+                        @foreach (var profile in _profiles)
+                        {
+                            <MudSelectItem T="string" Value="@profile.ProfileId">@profile.Name (@profile.MergeMode)</MudSelectItem>
+                        }
+                    </MudSelect>
+                    <MudSwitch @bind-Value="_model.Enabled" Color="Color.Success" Label="Enabled" />
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="_isSaving" OnClick="SaveAsync">
+                        @(_isSaving ? "Saving..." : (_isEditing ? "Update Provider" : "Create Provider"))
+                    </MudButton>
+                </MudStack>
+            </MudForm>
+        </MudPaper>
+    </MudItem>
+
+    <MudItem xs="12" lg="7">
+        <MudPaper Class="pa-4" Elevation="1">
+            <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-3">
+                <MudText Typo="Typo.h6">Configured Providers</MudText>
+                <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Refresh" OnClick="LoadAsync" Disabled="_isLoading">Reload</MudButton>
+            </MudStack>
+
+            @if (_isLoading)
+            {
+                <MudProgressCircular Indeterminate="true" />
+            }
+            else if (_providers.Count == 0)
+            {
+                <MudAlert Severity="Severity.Info" Variant="Variant.Outlined">No providers configured yet.</MudAlert>
+            }
+            else
+            {
+                <MudTable Items="_providers" Hover="true" Dense="true">
+                    <HeaderContent>
+                        <MudTh>Name</MudTh>
+                        <MudTh>Enabled</MudTh>
+                        <MudTh>Last Refresh</MudTh>
+                        <MudTh>Snapshots</MudTh>
+                        <MudTh>Actions</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd>@context.Name</MudTd>
+                        <MudTd>@(context.Enabled ? "Yes" : "No")</MudTd>
+                        <MudTd>@FormatRefresh(context.LastRefresh)</MudTd>
+                        <MudTd>@FormatSnapshots(context.LatestSnapshots)</MudTd>
+                        <MudTd>
+                            <MudStack Row="true" Spacing="1">
+                                <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" Size="Size.Small" OnClick="() => BeginEdit(context)" />
+                                <MudIconButton Icon="@(context.Enabled ? Icons.Material.Filled.ToggleOn : Icons.Material.Filled.ToggleOff)" Color="Color.Secondary" Size="Size.Small" OnClick="() => ToggleEnabledAsync(context)" />
+                                <MudButton Variant="Variant.Text" Size="Size.Small" OnClick="() => LoadPreviewAsync(context.ProviderId)">Preview</MudButton>
+                                <MudButton Variant="Variant.Text" Size="Size.Small" OnClick="() => RefreshPreviewAsync(context.ProviderId)">Refresh & Preview</MudButton>
+                            </MudStack>
+                        </MudTd>
+                    </RowTemplate>
+                </MudTable>
+            }
+        </MudPaper>
+    </MudItem>
+</MudGrid>
+
+<MudPaper Class="pa-4 mt-4" Elevation="1">
+    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Class="mb-3">
+        <MudText Typo="Typo.h6">Preview</MudText>
+        <MudSpacer />
+        <MudNumericField T="int" Label="Sample Size" @bind-Value="_previewSampleSize" Min="1" Max="50" Style="max-width: 120px;" />
+        <MudTextField Label="Group Filter" @bind-Value="_previewGroupFilter" Style="max-width: 220px;" />
+    </MudStack>
+
+    @if (_isPreviewLoading)
+    {
+        <MudProgressCircular Indeterminate="true" />
+    }
+    else if (_preview is null)
+    {
+        <MudAlert Severity="Severity.Info" Variant="Variant.Outlined">Select a provider and click Preview or Refresh & Preview.</MudAlert>
+    }
+    else
+    {
+        <MudStack Spacing="1" Class="mb-3">
+            <MudText Typo="Typo.caption">Provider: @_preview.ProviderId</MudText>
+            <MudText Typo="Typo.caption">Source fetch: @_preview.Source.FetchRunId (@_preview.Source.FetchStartedUtc.ToString("u"))</MudText>
+            <MudText Typo="Typo.caption">Totals: @_preview.Totals.GroupCount groups, @_preview.Totals.ChannelCount channels</MudText>
+        </MudStack>
+
+        @if (_preview.Groups.Count == 0)
+        {
+            <MudAlert Severity="Severity.Info" Variant="Variant.Outlined">No groups available for this preview.</MudAlert>
+        }
+        else
+        {
+            <MudExpansionPanels>
+                @foreach (var group in _preview.Groups)
+                {
+                    <MudExpansionPanel Text="@($"{group.GroupName} ({group.ChannelCount})")">
+                        <MudTable Items="group.SampleChannels" Dense="true" Hover="true">
+                            <HeaderContent>
+                                <MudTh>Channel</MudTh>
+                                <MudTh>tvg-id</MudTh>
+                                <MudTh>Stream</MudTh>
+                            </HeaderContent>
+                            <RowTemplate>
+                                <MudTd>@context.DisplayName</MudTd>
+                                <MudTd>@(context.TvgId ?? "-")</MudTd>
+                                <MudTd>@(context.StreamUrlRedacted ?? (context.HasStreamUrl ? "Available" : "None"))</MudTd>
+                            </RowTemplate>
+                        </MudTable>
+                    </MudExpansionPanel>
+                }
+            </MudExpansionPanels>
+        }
+    }
+</MudPaper>
+
+@code {
+    private readonly List<ProviderDto> _providers = [];
+    private readonly List<ProfileListItemDto> _profiles = [];
+    private ProviderEditModel _model = new();
+    private MudForm? _form;
+    private bool _isLoading;
+    private bool _isSaving;
+    private bool _isEditing;
+    private string? _editingProviderId;
+    private bool _isPreviewLoading;
+    private int _previewSampleSize = 10;
+    private string? _previewGroupFilter;
+    private ProviderPreviewDto? _preview;
+    private string? _error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _isLoading = true;
+        _error = null;
+
+        try
+        {
+            var profiles = await Http.GetFromJsonAsync<List<ProfileListItemDto>>("/api/v1/profiles");
+            var providers = await Http.GetFromJsonAsync<List<ProviderDto>>("/api/v1/providers");
+
+            _profiles.Clear();
+            _profiles.AddRange(profiles ?? []);
+
+            _providers.Clear();
+            _providers.AddRange(providers ?? []);
+
+            if (string.IsNullOrWhiteSpace(_model.ProfileId))
+            {
+                _model.ProfileId = _profiles.FirstOrDefault(x => x.Enabled)?.ProfileId ?? string.Empty;
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = $"Failed to load provider data: {ex.Message}";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private void BeginEdit(ProviderDto provider)
+    {
+        _isEditing = true;
+        _editingProviderId = provider.ProviderId;
+        _model = new ProviderEditModel
+        {
+            Name = provider.Name,
+            PlaylistUrl = provider.PlaylistUrl,
+            XmltvUrl = provider.XmltvUrl,
+            HeadersJson = provider.HeadersJson,
+            UserAgent = provider.UserAgent,
+            Enabled = provider.Enabled,
+            TimeoutSeconds = provider.TimeoutSeconds,
+            ProfileId = provider.AssociatedProfileIds.FirstOrDefault() ?? string.Empty,
+        };
+    }
+
+    private void ResetForm()
+    {
+        _isEditing = false;
+        _editingProviderId = null;
+        _model = new ProviderEditModel
+        {
+            Enabled = true,
+            TimeoutSeconds = 20,
+            ProfileId = _profiles.FirstOrDefault(x => x.Enabled)?.ProfileId ?? string.Empty,
+        };
+    }
+
+    private async Task SaveAsync()
+    {
+        _error = null;
+        _isSaving = true;
+
+        try
+        {
+            if (_form is not null)
+            {
+                await _form.Validate();
+                if (!_form.IsValid)
+                {
+                    return;
+                }
+            }
+
+            var profileIds = string.IsNullOrWhiteSpace(_model.ProfileId)
+                ? null
+                : new List<string> { _model.ProfileId };
+
+            HttpResponseMessage response;
+            if (_isEditing && !string.IsNullOrWhiteSpace(_editingProviderId))
+            {
+                var request = new UpdateProviderRequest
+                {
+                    Name = _model.Name,
+                    PlaylistUrl = _model.PlaylistUrl,
+                    XmltvUrl = _model.XmltvUrl,
+                    HeadersJson = _model.HeadersJson,
+                    UserAgent = _model.UserAgent,
+                    Enabled = _model.Enabled,
+                    TimeoutSeconds = _model.TimeoutSeconds,
+                    AssociateToProfileIds = profileIds,
+                };
+
+                response = await Http.PutAsJsonAsync($"/api/v1/providers/{_editingProviderId}", request);
+            }
+            else
+            {
+                var request = new CreateProviderRequest
+                {
+                    Name = _model.Name,
+                    PlaylistUrl = _model.PlaylistUrl,
+                    XmltvUrl = _model.XmltvUrl,
+                    HeadersJson = _model.HeadersJson,
+                    UserAgent = _model.UserAgent,
+                    Enabled = _model.Enabled,
+                    TimeoutSeconds = _model.TimeoutSeconds,
+                    AssociateToProfileIds = profileIds,
+                };
+
+                response = await Http.PostAsJsonAsync("/api/v1/providers", request);
+            }
+
+            if (!response.IsSuccessStatusCode)
+            {
+                _error = await ReadErrorAsync(response);
+                return;
+            }
+
+            ResetForm();
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = $"Failed to save provider: {ex.Message}";
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private async Task ToggleEnabledAsync(ProviderDto provider)
+    {
+        _error = null;
+
+        try
+        {
+            var response = await Http.PatchAsync($"/api/v1/providers/{provider.ProviderId}/enabled", JsonContent.Create(new SetProviderEnabledRequest
+            {
+                Enabled = !provider.Enabled,
+            }));
+
+            if (!response.IsSuccessStatusCode)
+            {
+                _error = await ReadErrorAsync(response);
+                return;
+            }
+
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = $"Failed to toggle provider enabled: {ex.Message}";
+        }
+    }
+
+    private async Task LoadPreviewAsync(string providerId)
+    {
+        _isPreviewLoading = true;
+        _error = null;
+
+        try
+        {
+            var query = BuildPreviewQuery();
+            using var response = await Http.GetAsync($"/api/v1/providers/{providerId}/preview{query}");
+            if (!response.IsSuccessStatusCode)
+            {
+                _error = await ReadErrorAsync(response);
+                _preview = null;
+                return;
+            }
+
+            _preview = await response.Content.ReadFromJsonAsync<ProviderPreviewDto>();
+        }
+        catch (Exception ex)
+        {
+            _error = $"Failed to load preview: {ex.Message}";
+            _preview = null;
+        }
+        finally
+        {
+            _isPreviewLoading = false;
+        }
+    }
+
+    private async Task RefreshPreviewAsync(string providerId)
+    {
+        _isPreviewLoading = true;
+        _error = null;
+
+        try
+        {
+            var payload = new RefreshPreviewRequest
+            {
+                SampleSize = _previewSampleSize,
+                GroupContains = _previewGroupFilter,
+            };
+
+            using var response = await Http.PostAsJsonAsync($"/api/v1/providers/{providerId}/refresh-preview", payload);
+            if (!response.IsSuccessStatusCode)
+            {
+                _error = await ReadErrorAsync(response);
+                _preview = null;
+                return;
+            }
+
+            _preview = await response.Content.ReadFromJsonAsync<ProviderPreviewDto>();
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = $"Failed to refresh preview: {ex.Message}";
+            _preview = null;
+        }
+        finally
+        {
+            _isPreviewLoading = false;
+        }
+    }
+
+    private string BuildPreviewQuery()
+    {
+        var sb = new StringBuilder("?");
+        sb.Append($"sampleSize={_previewSampleSize}");
+        if (!string.IsNullOrWhiteSpace(_previewGroupFilter))
+        {
+            sb.Append("&groupContains=");
+            sb.Append(Uri.EscapeDataString(_previewGroupFilter));
+        }
+
+        return sb.ToString();
+    }
+
+    private static string FormatRefresh(ProviderLastRefreshDto? refresh)
+    {
+        if (refresh is null)
+        {
+            return "No refresh yet";
+        }
+
+        var status = refresh.Status;
+        var finished = refresh.FinishedUtc?.ToString("u") ?? "in-progress";
+        return $"{status} @ {finished}";
+    }
+
+    private static string FormatSnapshots(List<ProviderLatestSnapshotDto> snapshots)
+    {
+        if (snapshots.Count == 0)
+        {
+            return "None";
+        }
+
+        return string.Join(" | ", snapshots.Select(x => $"{x.ProfileId}:{x.Status}:{x.CreatedUtc:u}"));
+    }
+
+    private static async Task<string> ReadErrorAsync(HttpResponseMessage response)
+    {
+        var body = await response.Content.ReadAsStringAsync();
+        if (string.IsNullOrWhiteSpace(body))
+        {
+            return $"Request failed: {(int)response.StatusCode} {response.ReasonPhrase}";
+        }
+
+        try
+        {
+            using var doc = JsonDocument.Parse(body);
+            if (doc.RootElement.ValueKind == JsonValueKind.Object)
+            {
+                if (doc.RootElement.TryGetProperty("title", out var title))
+                {
+                    var detail = doc.RootElement.TryGetProperty("detail", out var detailProp)
+                        ? detailProp.GetString()
+                        : null;
+                    return string.IsNullOrWhiteSpace(detail)
+                        ? title.GetString() ?? "Request failed"
+                        : $"{title.GetString()}: {detail}";
+                }
+
+                if (doc.RootElement.TryGetProperty("errors", out var errors) && errors.ValueKind == JsonValueKind.Object)
+                {
+                    foreach (var error in errors.EnumerateObject())
+                    {
+                        var first = error.Value.EnumerateArray().FirstOrDefault().GetString();
+                        if (!string.IsNullOrWhiteSpace(first))
+                        {
+                            return first;
+                        }
+                    }
+                }
+            }
+        }
+        catch (JsonException)
+        {
+            // Fall through to raw body.
+        }
+
+        return body;
+    }
+
+    private sealed class ProviderEditModel
+    {
+        public string Name { get; set; } = string.Empty;
+        public string PlaylistUrl { get; set; } = string.Empty;
+        public string? XmltvUrl { get; set; }
+        public string? HeadersJson { get; set; }
+        public string? UserAgent { get; set; }
+        public bool Enabled { get; set; } = true;
+        public int TimeoutSeconds { get; set; } = 20;
+        public string ProfileId { get; set; } = string.Empty;
+    }
+}

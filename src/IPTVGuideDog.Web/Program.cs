@@ -1,10 +1,13 @@
 using IPTVGuideDog.Web.Configuration;
 using IPTVGuideDog.Web.Infrastructure;
 using IPTVGuideDog.Core.Channels;
+using IPTVGuideDog.Core.M3u;
 using IPTVGuideDog.Web.Application;
+using IPTVGuideDog.Web.Api;
 using IPTVGuideDog.Web.Components;
 using IPTVGuideDog.Web.Components.Account;
 using IPTVGuideDog.Web.Data;
+using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -33,6 +36,15 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlite(connectionString));
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
+builder.Services.AddProblemDetails();
+builder.Services.AddValidation();
+builder.Services.AddHttpClient();
+builder.Services.AddScoped(sp =>
+{
+    var navigation = sp.GetRequiredService<NavigationManager>();
+    return new HttpClient { BaseAddress = new Uri(navigation.BaseUri) };
+});
+builder.Services.AddScoped<PlaylistParser>();
 
 builder.Services.AddIdentityCore<ApplicationUser>(options =>
     {
@@ -83,6 +95,7 @@ app.MapRazorComponents<App>()
 
 // Add additional endpoints required by the Identity /Account Razor components.
 app.MapAdditionalIdentityEndpoints();
+app.MapProviderApiEndpoints();
 
 app.Run();
 
