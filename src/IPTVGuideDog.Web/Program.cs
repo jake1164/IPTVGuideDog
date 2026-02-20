@@ -1,8 +1,4 @@
-using IPTVGuideDog.Web.Configuration;
-using IPTVGuideDog.Web.Infrastructure;
-using IPTVGuideDog.Core.Channels;
 using IPTVGuideDog.Core.M3u;
-using IPTVGuideDog.Web.Application;
 using IPTVGuideDog.Web.Api;
 using IPTVGuideDog.Web.Components;
 using IPTVGuideDog.Web.Components.Account;
@@ -11,7 +7,6 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
 using MudBlazor.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -23,8 +18,6 @@ builder.Services.AddRazorComponents()
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddScoped<IdentityRedirectManager>();
 builder.Services.AddScoped<AuthenticationStateProvider, IdentityRevalidatingAuthenticationStateProvider>();
-builder.Services.AddSingleton<ChannelWorkspaceState>();
-
 builder.Services.AddAuthentication(options =>
     {
         options.DefaultScheme = IdentityConstants.ApplicationScheme;
@@ -57,19 +50,6 @@ builder.Services.AddIdentityCore<ApplicationUser>(options =>
 
 builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
 builder.Services.AddMudServices();
-
-builder.Services.AddOptions<ApiOptions>()
-    .BindConfiguration("SocketHost")
-    .ValidateDataAnnotations();
-
-builder.Services.AddHttpClient<IChannelCatalog, ApiChannelCatalog>((sp, client) =>
-{
-    var options = sp.GetRequiredService<IOptions<ApiOptions>>().Value;
-    if (!string.IsNullOrWhiteSpace(options.BaseAddress) && Uri.TryCreate(options.BaseAddress, UriKind.Absolute, out var baseUri))
-    {
-        client.BaseAddress = baseUri;
-    }
-});
 
 var app = builder.Build();
 

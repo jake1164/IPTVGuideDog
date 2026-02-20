@@ -10,8 +10,6 @@ A single unified process (`IPTVGuideDog.Web`) provides:
   - Stream proxy — `/stream/<streamKey>`
 - Background refresh service that builds snapshots and serves last-known-good
 
-Note: The `IPTVGuideDog.API` project is a pre-DB artifact (socket-host architecture) and is being removed. All serving and API endpoints live in the Web project.
-
 ## Core Concepts
 - Provider: upstream source of channels. Multiple providers can be configured and browsed; one is active at a time.
 - Canonical Channel: stable identity representing a channel concept, independent of provider churn. Forms the basis for lineup shaping in a future release.

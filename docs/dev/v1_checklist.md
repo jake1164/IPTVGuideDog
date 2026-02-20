@@ -134,12 +134,12 @@ Notes:
 
 Remove artifacts from the pre-DB socket-host architecture before packaging.
 
-- [ ] Remove or replace `ChannelFilters.razor` (V2 group selection — not V1 scope)
-- [ ] Remove `ChannelWorkspaceState.cs` (in-memory group state, not DB-backed, V2 concept)
-- [ ] Remove `SocketHostChannelCatalog.cs` (old socket host HTTP client — no longer used)
-- [ ] Remove `Setup.razor` and "Socket Host" nav item (points to obsolete socket host config)
-- [ ] Remove or repurpose the `IPTVGuideDog.API` project (old separate-process API; serving endpoints now live in Web)
-- [ ] Remove "Channel Filters" from nav menu until V2
+- [x] Remove or replace `ChannelFilters.razor` (V2 group selection — not V1 scope)
+- [x] Remove `ChannelWorkspaceState.cs` (in-memory group state, not DB-backed, V2 concept)
+- [x] Remove `SocketHostChannelCatalog.cs` (old socket host HTTP client — no longer used)
+- [x] Remove `Setup.razor` and "Socket Host" nav item (points to obsolete socket host config)
+- [x] Remove `IPTVGuideDog.API` project (old separate-process API; removed from solution and deleted)
+- [x] Remove "Channel Filters" from nav menu until V2
 
 ---
 
