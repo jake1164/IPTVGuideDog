@@ -1,5 +1,5 @@
 # IPTVGuideDog V1 Checklist
-Goal: Minimal end-to-end pass-through service with provider preview UX and profile-scoped outputs.
+Goal: Minimal end-to-end pass-through service with provider preview UX and a single locked output endpoint.
 
 Client → GuideDog → Provider
 
@@ -9,14 +9,14 @@ Legend: [ ] not started | [~] in progress | [x] done
 
 ## V1 Scope
 
-- Provider configuration
-- Snapshot-based playlist + xmltv
+- Provider configuration (add/edit multiple providers; one active at a time)
+- Snapshot-based M3U + XMLTV output
 - Service-owned /stream endpoint
 - GUI preview of provider groups/channels
-- Profile-scoped outputs
+- Single output locked to `/m3u/guidedog.m3u` and `/xmltv/guidedog.xml` (output name is not configurable in Core)
 - LAN-only deployment
 
-Filtering and redundancy come later.
+Lineup shaping, multiple named output endpoints, and redundancy come later.
 
 ---
 
@@ -35,7 +35,7 @@ Minimum V1 tables:
 - [x] snapshots (profile-scoped)
 - [x] stream_keys (stable per profile+channel)
 
-Optional but schema-present:
+Optional but schema-present (future use — see DB_SCHEMA.md Appendix C):
 
 - [x] canonical_channels
 - [x] channel_sources
@@ -68,35 +68,35 @@ Locked schema decisions (authoritative):
 
 ## 2) Provider Configuration UI
 
-- [ ] List/add/edit providers
-- [ ] Playlist URL + optional EPG URL
-- [ ] Active toggle
-- [ ] Associate provider to default profile
-- [ ] Show last refresh status
-- [ ] Show snapshot timestamp
+- [x] List/add/edit providers
+- [x] Playlist URL + optional EPG URL
+- [x] Active toggle (enabled/disabled per provider)
+- [x] Associate provider to default profile (V1: single-select)
+- [x] Show last refresh status
+- [x] Show snapshot timestamp
 
 ---
 
-## 3) Provider Preview UX (New V1 Scope)
+## 3) Provider Preview UX
 
-- [ ] Preview groups from latest snapshot
-- [ ] Display channel counts
-- [ ] Display first N channels
-- [ ] “Refresh & Preview” action
-- [ ] Preview endpoint reusing CLI parser logic
-- [ ] Read-only preview (no filtering yet)
+- [x] Preview groups from latest successful refresh
+- [x] Display channel counts per group
+- [x] Display first N channels per group (configurable sample size)
+- [x] "Refresh & Preview" action (fetches live, upserts DB, returns preview)
+- [x] Preview endpoint reusing CLI parser logic (PlaylistParser)
+- [x] Read-only preview (no filtering)
 
 ---
 
 ## 4) Snapshot Fetcher (Hosted Service)
 
 - [ ] Scheduled refresh
-- [ ] On-demand refresh
-- [ ] Fetch playlist + epg
-- [ ] Parse using CLI logic
+- [ ] On-demand refresh trigger
+- [ ] Fetch playlist + EPG
+- [ ] Parse using CLI parser logic
 - [ ] Populate provider_channels + provider_groups
 - [ ] Write snapshot files:
-  snapshots/{profile}/{snapshotId}/
+      snapshots/{profile}/{snapshotId}/
 - [ ] Insert snapshot record (staged → active)
 - [ ] Update fetch_runs
 - [ ] Preserve last-known-good on failure
@@ -112,23 +112,38 @@ Locked schema decisions (authoritative):
 - [ ] GET /health
 
 Notes:
-- Core locks output name to `guidedog` (i.e., `/m3u/guidedog.m3u`, `/xmltv/guidedog.xml`)
-- /stream implementation internal (relay for V1)
-- Playlist must reference /stream/<streamKey>
-- Snapshot must be used for serving
+- Output name is locked to `guidedog` in Core (`/m3u/guidedog.m3u`, `/xmltv/guidedog.xml`)
+- /stream implementation is relay-only in V1 (no buffering)
+- Playlist must reference /stream/<streamKey> — clients never see raw provider URLs
+- Serving must read from the active snapshot, not a live fetch
 
 ---
 
 ## 6) Wiring UI to API
 
-- [ ] Provider CRUD API
-- [ ] Status API
-- [ ] Preview endpoint
-- [ ] Blazor client integration
+- [x] Provider CRUD API (`GET`, `POST`, `PUT`, `PATCH /enabled`)
+- [x] Status API (`GET /api/v1/providers/{id}/status`)
+- [x] Preview endpoint (`GET` + `POST /refresh-preview`)
+- [~] Blazor client integration
+  - [x] Providers page (CRUD + preview fully wired)
+  - [ ] Dashboard rewrite (replace placeholder with real V1 status: active provider, last refresh, active snapshot)
 
 ---
 
-## 7) Packaging & Ops
+## 7) Pre-V1 Cleanup (Stale Scaffolding)
+
+Remove artifacts from the pre-DB socket-host architecture before packaging.
+
+- [ ] Remove or replace `ChannelFilters.razor` (V2 group selection — not V1 scope)
+- [ ] Remove `ChannelWorkspaceState.cs` (in-memory group state, not DB-backed, V2 concept)
+- [ ] Remove `SocketHostChannelCatalog.cs` (old socket host HTTP client — no longer used)
+- [ ] Remove `Setup.razor` and "Socket Host" nav item (points to obsolete socket host config)
+- [ ] Remove or repurpose the `IPTVGuideDog.API` project (old separate-process API; serving endpoints now live in Web)
+- [ ] Remove "Channel Filters" from nav menu until V2
+
+---
+
+## 8) Packaging & Ops
 
 - [ ] Dockerfile (ASP.NET)
 - [ ] Volume mounts for DB + snapshots
@@ -139,7 +154,7 @@ Notes:
 
 ---
 
-## 8) Tests (Lightweight)
+## 9) Tests (Lightweight)
 
 - [ ] Provider validation
 - [ ] Snapshot success/failure handling
@@ -152,10 +167,10 @@ Notes:
 
 V1 delivers:
 
-- Profile-scoped pass-through outputs
-- Snapshot-based serving
-- Service-owned stream endpoint
-- Provider preview UX
+- Single pass-through output: `/m3u/guidedog.m3u` + `/xmltv/guidedog.xml` (no lineup shaping)
+- Snapshot-based serving with last-known-good behavior on refresh failure
+- Service-owned `/stream/<streamKey>` relay (clients never see raw provider URLs)
+- Provider configuration UI with group/channel preview
 - LAN-only operation
 
-Filtering, canonical UI, and redundancy follow.
+Lineup shaping, multiple named output endpoints, and redundancy follow in later versions.

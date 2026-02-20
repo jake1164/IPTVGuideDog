@@ -18,12 +18,11 @@ The service focuses on **clarity, control, and predictable behavior**.
 At a high level, the service:
 
 - Ingests a provider playlist (M3U) and guide data (XMLTV)
-- Normalizes provider channels into **canonical channel identities**
 - Builds **snapshots** and serves **last-known-good** output
 - Publishes compatibility endpoints for clients:
-  - M3U
-  - XMLTV
-  - Stream relay proxy
+  - M3U — `/m3u/guidedog.m3u`
+  - XMLTV — `/xmltv/guidedog.xml`
+  - Stream relay proxy — `/stream/<streamKey>`
 
 ---
 
@@ -32,15 +31,16 @@ At a high level, the service:
 ### Provider
 An upstream IPTV source you configure (URL + credentials). Providers can be large and noisy.
 
+Multiple providers can be configured and previewed. You can compare their catalogs and switch the active provider at any time. Only one provider drives the published output at a time — switching will rebuild the published lineup from the new source.
+
 ### Group
-A category label from the provider playlist (e.g., `USA | News`, `LIVE | NFL (Direct)`, `UFC Fight Night | ...`). Groups are the primary way users tame large catalogs.
+A category label from the provider playlist (e.g., `USA | News`, `LIVE | NFL (Direct)`, `UFC Fight Night | ...`). Groups are the primary way to understand the shape of a provider's catalog.
 
 ### Canonical Channel
-A stable identity representing "the channel" independent of how providers rename/reorder things over time.
-Canonical channels are created automatically as new channels are discovered.
+A stable identity representing "the channel" independent of how providers rename/reorder things over time. Forms the foundation for lineup shaping in a future release.
 
 ### Lineup
-The published channel set, served at the well-known endpoint:
+The published channel set, served at:
 
 - `/m3u/guidedog.m3u`
 - `/xmltv/guidedog.xml`
@@ -59,13 +59,12 @@ Clients receive a URL like `/stream/<streamKey>` instead of a raw provider URL.
 
 A refresh run follows this pattern:
 
-1. Fetch provider inputs (M3U + XMLTV)
-2. Detect channel/group changes
-3. Update canonical channel catalog (auto-create new channels)
-4. Generate a **staged snapshot**
-5. Validate snapshot (basic integrity checks)
-6. Promote staged snapshot to **active**
-7. Serve active snapshot to clients
+1. Fetch provider inputs (M3U + XMLTV) from the active provider
+2. Parse and upsert provider groups and channels into the DB
+3. Generate a **staged snapshot** (M3U + XMLTV files written to disk)
+4. Validate snapshot (basic integrity checks)
+5. Promote staged snapshot to **active**
+6. Serve active snapshot to clients
 
 If refresh fails:
 - The service continues serving the last active snapshot (last-known-good).
@@ -88,29 +87,26 @@ See: `docs/design/HTTP_COMPATIBILITY.md`
 
 The Web UI is intended to make large catalogs manageable.
 
-V1 views:
+Views:
 
-- **Provider**: configure your IPTV provider connection details
+- **Provider**: configure providers, preview catalogs, and manage the active provider
 - **Groups**: browse the provider's groups and channel counts (read-only preview)
 - **Snapshots / Status**: see refresh history and the current active snapshot
 
 Design goals:
 - configuration should be explicit and understandable
 - changes should be visible (what changed, when)
-- no surprise renumbering
 
 ---
 
-## Lineup Shaping (Planned — V2)
+## Lineup Shaping (Planned)
 
-A future release will introduce full lineup shaping for your active provider:
+A future release will introduce lineup shaping controls:
 
 - Group inclusion rules (select which groups appear in your lineup)
 - Channel numbering (start ranges, pinned numbers, overflow handling)
 - New channels inbox (review and approve newly discovered channels)
 - Dynamic groups for rotating sports or event feeds
-
-These features are planned for V2 and are not part of the initial release.
 
 ---
 

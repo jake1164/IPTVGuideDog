@@ -10,29 +10,30 @@ The interface emphasizes:
 - Predictable behavior
 - Clear visibility
 - No hidden logic
-- No surprise renumbering
 
 ---
 
-## V1 UI Sections
+## UI Sections
 
 ### 1. Provider
 
-The Provider section allows you to configure your upstream IPTV source.
+The Provider section lets you configure and manage your upstream IPTV sources.
+
+Add multiple providers and browse each one's catalog. You can switch the active provider at any time — the active provider is the one that drives the published output at `/m3u/guidedog.m3u` and `/xmltv/guidedog.xml`.
 
 Configuration includes:
 
 - Playlist URL
 - EPG URL (optional)
-- Refresh settings
-- Active/enabled toggle
+- Timeout settings
+- Enabled/disabled toggle
 
 The UI shows:
 
 - Last refresh time
 - Success/failure status
-- Channel count
-- Group count
+- Channel count seen
+- Associated profile and snapshot status
 
 ---
 
@@ -46,9 +47,7 @@ For each group, the UI displays:
 - Channel count
 - Sample channels
 
-This is where you can understand the shape of your provider's catalog before lineup shaping rules are applied.
-
-Instead of manually filtering thousands of channels, you can see exactly what the provider is delivering and what groups exist.
+This view is read-only. Instead of manually inspecting thousands of channels, you can see exactly what the provider is delivering and what groups exist before deciding what to do with them.
 
 ---
 
@@ -75,13 +74,13 @@ Clients receive URLs like:
 
 `/stream/<streamKey>`
 
-Stream keys do not change across refreshes unless the canonical channel itself changes.
+Stream keys are stable across refreshes. They only regenerate if the active provider is switched.
 
 This protects DVR mappings and client configurations.
 
 ---
 
-## Lineup Shaping (Planned — V2)
+## Lineup Shaping (Planned)
 
 A future release will add lineup shaping controls to the UI:
 
@@ -89,8 +88,6 @@ A future release will add lineup shaping controls to the UI:
 - Channel numbering (start ranges, pinned numbers, overflow handling)
 - New channels inbox (review and approve newly discovered channels)
 - Dynamic groups for rotating sports or event feeds
-
-These controls are planned for V2 and are not part of the initial release.
 
 ---
 

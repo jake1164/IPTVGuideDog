@@ -291,6 +291,44 @@ Recommendation:
 
 ---
 
+# Appendix C — Current Constraints and Reserved Fields
+
+Several schema fields and tables are present for forward-compatibility but are not populated or enforced currently. This appendix documents what is active versus what is reserved for future releases.
+
+## Fields reserved for future use
+
+### `profiles.output_name`
+- **Current:** The output name is locked to `guidedog` in Core regardless of this field value. Serving endpoints are always `/m3u/guidedog.m3u` and `/xmltv/guidedog.xml`.
+- **Future:** Named output endpoints per profile (e.g. `/m3u/livingroom.m3u`, `/m3u/mancave.m3u`).
+
+### `profiles.merge_mode`
+- **Current:** Always `single`. The `merged` and `redundancy-ready` values are schema-valid but unused.
+- **Future:** Controls how multiple providers are blended or failed-over for a single profile output.
+
+### `profile_providers.priority`
+- **Current:** Stored but has no effect. Currently one active provider per profile.
+- **Future:** Priority ordering for multi-provider merge and failover.
+
+## Tables reserved for future use
+
+### `canonical_channels`
+- **Current:** Schema present. Not actively user-managed. May be auto-populated during snapshot build to anchor stream key generation; exact behavior is defined by the snapshot fetcher (Section 4 of checklist).
+- **Future:** User-facing stable channel identity that survives provider churn. Foundation for group inclusion, channel numbering, and DVR stability features.
+
+### `channel_sources`
+- **Current:** Schema present, not populated.
+- **Future:** Maps canonical channels to one or more provider stream candidates. Foundation for multi-provider redundancy and failover.
+
+### `channel_match_rules`
+- **Current:** Schema present, not populated.
+- **Future:** Auto-classification rules for mapping provider channels to canonical channels and identifying event/ephemeral channels.
+
+### `epg_channel_map`
+- **Current:** Schema present, not populated. EPG is passed through from the provider directly using provider tvg-ids.
+- **Future:** Explicit tvg-id mapping between canonical channels and XMLTV channel IDs. Used when provider tvg-ids are unstable or need overriding.
+
+---
+
 # Appendix B — Client Compatibility (NextPVR, Jellyfin, Plex)
 
 ## What must remain stable

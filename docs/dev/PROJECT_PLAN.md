@@ -18,11 +18,10 @@ V1 delivers:
 - Provider group preview (read-only catalog browse)
 - Snapshot-based serving (staged → active lifecycle)
 - Last-known-good behavior on refresh failure
-- Stable canonical channel identity
-- Stable stream keys per canonical channel
+- Stable stream keys per channel (regenerate on provider switch; warning shown)
 - Stream proxy is relay-only
 
-No lineup shaping in V1. No buffering/caching in V1.
+No lineup shaping in V1. No buffering/caching in V1. Canonical channel identity is a future feature.
 
 ## V2 Definition
 V2 adds full lineup shaping for the active provider:
@@ -34,6 +33,11 @@ V2 adds full lineup shaping for the active provider:
 
 ## Documents
 - docs/design/ARCHITECTURE_MAP.md
+- docs/design/DB_SCHEMA.md
+- docs/design/HTTP_COMPATIBILITY.md
 - docs/design/LINEUP_RULES.md
 - docs/design/NUMBERING_RULES.md
 - docs/dev/ROADMAP.md
+- docs/dev/v1_checklist.md
+- docs/dev/V1_SECTIONS_2_3_ENDPOINT_CONTRACTS.md
+- docs/dev/DESIGN_DECISIONS.md
