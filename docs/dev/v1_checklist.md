@@ -145,12 +145,13 @@ Remove artifacts from the pre-DB socket-host architecture before packaging.
 
 ## 8) Packaging & Ops
 
-- [ ] Dockerfile (ASP.NET)
-- [ ] Volume mounts for DB + snapshots
-- [ ] Smoke test:
-  - curl /health
-  - curl /m3u/guidedog.m3u
-  - stream via /stream
+- [x] Dockerfile (ASP.NET)
+- [x] Volume mounts for DB + snapshots
+- [x] Container usage/runbook doc (`docs/dev/container.md`)
+- [~] Smoke test (pending execution on host with running Docker engine):
+  - [ ] curl /health
+  - [ ] curl /m3u/guidedog.m3u
+  - [ ] stream via /stream
 
 ---
 

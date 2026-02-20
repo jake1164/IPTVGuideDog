@@ -1,0 +1,94 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "build",
+      "type": "process",
+      "command": "dotnet",
+      "args": [
+        "build",
+        "${workspaceFolder}/src/IPTVGuideDog.Cli/IPTVGuideDog.Cli.csproj",
+        "/property:GenerateFullPaths=true",
+        "/consoleloggerparameters:NoSummary"
+      ],
+      "problemMatcher": "$msCompile",
+      "group": "build"
+    },
+    {
+      "label": "build-web",
+      "type": "process",
+      "command": "dotnet",
+      "args": [
+        "build",
+        "${workspaceFolder}/src/IPTVGuideDog.Web/IPTVGuideDog.Web.csproj",
+        "/property:GenerateFullPaths=true",
+        "/consoleloggerparameters:NoSummary"
+      ],
+      "problemMatcher": "$msCompile"
+    },
+    {
+      "type": "docker-build",
+      "label": "docker-build: debug",
+      "dockerBuild": {
+        "tag": "iptvguidedog:web-debug",
+        "target": "final",
+        "dockerfile": "${workspaceFolder}/Dockerfile",
+        "context": "${workspaceFolder}"
+      },
+      "netCore": {
+        "appProject": "${workspaceFolder}/src/IPTVGuideDog.Web/IPTVGuideDog.Web.csproj"
+      }
+    },
+    {
+      "type": "docker-run",
+      "label": "docker-run: debug",
+      "dependsOn": [
+        "docker-build: debug"
+      ],
+      "dockerRun": {
+        "env": {
+          "ASPNETCORE_ENVIRONMENT": "Development",
+          "ASPNETCORE_URLS": "http://+:8080"
+        },
+        "customOptions": "--user root --rm",
+        "ports": [
+          {
+            "hostPort": 8080,
+            "containerPort": 8080
+          }
+        ]
+      },
+      "netCore": {
+        "appProject": "${workspaceFolder}/src/IPTVGuideDog.Web/IPTVGuideDog.Web.csproj",
+        "enableDebugging": true
+      }
+    },
+    {
+      "type": "docker-run",
+      "label": "docker-run: release",
+      "dependsOn": [
+        "docker-build: debug"
+      ],
+      "dockerRun": {
+        "customOptions": "--user root --rm",
+        "ports": [
+          {
+            "hostPort": 8080,
+            "containerPort": 8080
+          }
+        ]
+      }
+    },
+    {
+      "label": "docker-stop: guidedog-debug",
+      "type": "process",
+      "command": "docker",
+      "args": [
+        "rm",
+        "-f",
+        "iptvguidedog-debug"
+      ],
+      "problemMatcher": []
+    }
+  ]
+}

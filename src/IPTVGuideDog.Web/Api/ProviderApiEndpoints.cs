@@ -1,18 +1,15 @@
-using System.Text.Json;
-using System.Text.RegularExpressions;
-using IPTVGuideDog.Core.M3u;
+using IPTVGuideDog.Web.Application;
 using IPTVGuideDog.Web.Contracts.Providers;
 using IPTVGuideDog.Web.Data;
 using IPTVGuideDog.Web.Data.Entities;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 
 namespace IPTVGuideDog.Web.Api;
 
 public static class ProviderApiEndpoints
 {
-    private static readonly Regex MetadataAttributeRegex = new("(?<key>[A-Za-z0-9\\-]+)=\"(?<value>[^\"]*)\"", RegexOptions.Compiled);
-
     public static IEndpointRouteBuilder MapProviderApiEndpoints(this IEndpointRouteBuilder app)
     {
         var profiles = app.MapGroup("/api/v1/profiles");
@@ -24,12 +21,20 @@ public static class ProviderApiEndpoints
         providers.MapGet("/{providerId}", GetProviderAsync);
         providers.MapPut("/{providerId}", UpdateProviderAsync);
         providers.MapPatch("/{providerId}/enabled", SetProviderEnabledAsync);
+        providers.MapPatch("/{providerId}/active", SetProviderActiveAsync);
         providers.MapGet("/{providerId}/preview", GetPreviewAsync);
         providers.MapPost("/{providerId}/refresh-preview", RefreshPreviewAsync);
         providers.MapGet("/{providerId}/status", GetProviderStatusAsync);
 
+        var snapshots = app.MapGroup("/api/v1/snapshots");
+        snapshots.MapPost("/refresh", TriggerRefreshAsync);
+
         return app;
     }
+
+    // -------------------------------------------------------------------------
+    // Profiles
+    // -------------------------------------------------------------------------
 
     private static async Task<Ok<List<ProfileListItemDto>>> ListProfilesAsync(ApplicationDbContext db, CancellationToken cancellationToken)
     {
@@ -55,6 +60,10 @@ public static class ProviderApiEndpoints
             return TypedResults.Ok(new List<ProfileListItemDto>());
         }
     }
+
+    // -------------------------------------------------------------------------
+    // Providers
+    // -------------------------------------------------------------------------
 
     private static async Task<Ok<List<ProviderDto>>> ListProvidersAsync(ApplicationDbContext db, CancellationToken cancellationToken)
     {
@@ -196,6 +205,52 @@ public static class ProviderApiEndpoints
         });
     }
 
+    private static async Task<Results<Ok<ProviderActiveResponse>, NotFound, Conflict<string>>> SetProviderActiveAsync(
+        string providerId,
+        SetProviderActiveRequest request,
+        ApplicationDbContext db,
+        CancellationToken cancellationToken)
+    {
+        var provider = await db.Providers.SingleOrDefaultAsync(x => x.ProviderId == providerId, cancellationToken);
+        if (provider is null)
+        {
+            return TypedResults.NotFound();
+        }
+
+        if (request.IsActive)
+        {
+            // Clear current active provider first (partial unique index allows at-most-one)
+            var currentActive = await db.Providers
+                .Where(x => x.IsActive && x.ProviderId != providerId)
+                .ToListAsync(cancellationToken);
+
+            foreach (var p in currentActive)
+            {
+                p.IsActive = false;
+                p.UpdatedUtc = DateTime.UtcNow;
+            }
+        }
+
+        provider.IsActive = request.IsActive;
+        provider.UpdatedUtc = DateTime.UtcNow;
+
+        try
+        {
+            await db.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException)
+        {
+            return TypedResults.Conflict("Could not set provider active due to a database conflict.");
+        }
+
+        return TypedResults.Ok(new ProviderActiveResponse
+        {
+            ProviderId = provider.ProviderId,
+            IsActive = provider.IsActive,
+            UpdatedUtc = provider.UpdatedUtc,
+        });
+    }
+
     private static async Task<Results<Ok<ProviderStatusDto>, NotFound>> GetProviderStatusAsync(
         string providerId,
         ApplicationDbContext db,
@@ -260,8 +315,7 @@ public static class ProviderApiEndpoints
         string providerId,
         RefreshPreviewRequest request,
         ApplicationDbContext db,
-        IHttpClientFactory httpClientFactory,
-        PlaylistParser parser,
+        ProviderFetcher fetcher,
         CancellationToken cancellationToken)
     {
         var provider = await db.Providers.SingleOrDefaultAsync(x => x.ProviderId == providerId, cancellationToken);
@@ -291,25 +345,14 @@ public static class ProviderApiEndpoints
         db.FetchRuns.Add(fetchRun);
         await db.SaveChangesAsync(cancellationToken);
 
-        string playlistContent;
+        PlaylistFetchResult fetchResult;
         try
         {
-            using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            timeoutCts.CancelAfter(TimeSpan.FromSeconds(provider.TimeoutSeconds));
-
-            using var client = httpClientFactory.CreateClient();
-            ApplyHeadersFromJson(client, provider.HeadersJson);
-            if (!string.IsNullOrWhiteSpace(provider.UserAgent))
-            {
-                client.DefaultRequestHeaders.UserAgent.ParseAdd(provider.UserAgent);
-            }
-
-            playlistContent = await client.GetStringAsync(provider.PlaylistUrl, timeoutCts.Token);
+            fetchResult = await fetcher.FetchPlaylistAsync(provider, cancellationToken);
         }
-        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
+        catch (ProviderFetchException ex)
         {
             fetchRun.FinishedUtc = DateTime.UtcNow;
-            fetchRun.Status = "fail";
             fetchRun.ErrorSummary = ex.Message;
             await db.SaveChangesAsync(cancellationToken);
 
@@ -318,16 +361,9 @@ public static class ProviderApiEndpoints
                 detail: ex.Message,
                 statusCode: StatusCodes.Status502BadGateway);
         }
-
-        PlaylistDocument document;
-        try
-        {
-            document = parser.Parse(playlistContent, cancellationToken);
-        }
-        catch (Exception ex)
+        catch (ProviderParseException ex)
         {
             fetchRun.FinishedUtc = DateTime.UtcNow;
-            fetchRun.Status = "fail";
             fetchRun.ErrorSummary = ex.Message;
             await db.SaveChangesAsync(cancellationToken);
 
@@ -337,26 +373,200 @@ public static class ProviderApiEndpoints
                 statusCode: StatusCodes.Status500InternalServerError);
         }
 
-        var entries = document.Entries
-            .Where(x => !string.IsNullOrWhiteSpace(x.Url))
-            .Select(ParseEntry)
-            .ToList();
-
         var utcNow = DateTime.UtcNow;
-        await UpsertProviderGroupsAsync(db, providerId, entries, utcNow, cancellationToken);
-        await UpsertProviderChannelsAsync(db, providerId, fetchRun.FetchRunId, entries, utcNow, cancellationToken);
+        await UpsertProviderGroupsAsync(db, providerId, fetchResult.Channels, utcNow, cancellationToken);
+        await UpsertProviderChannelsAsync(db, providerId, fetchRun.FetchRunId, fetchResult.Channels, utcNow, cancellationToken);
 
         fetchRun.FinishedUtc = DateTime.UtcNow;
         fetchRun.Status = "ok";
         fetchRun.ErrorSummary = null;
-        fetchRun.ChannelCountSeen = entries.Count;
-        fetchRun.PlaylistBytes = System.Text.Encoding.UTF8.GetByteCount(playlistContent);
+        fetchRun.ChannelCountSeen = fetchResult.Channels.Count;
+        fetchRun.PlaylistBytes = (int)Math.Min(fetchResult.Bytes, int.MaxValue);
 
         await db.SaveChangesAsync(cancellationToken);
 
         var preview = await BuildPreviewAsync(db, providerId, fetchRun.FetchRunId, fetchRun.StartedUtc, sampleSizeValue.Value, request.GroupContains, cancellationToken);
         return TypedResults.Ok(preview);
     }
+
+    // -------------------------------------------------------------------------
+    // Snapshots
+    // -------------------------------------------------------------------------
+
+    private static IResult TriggerRefreshAsync(IRefreshTrigger trigger)
+    {
+        var triggered = trigger.TriggerRefresh();
+        return triggered
+            ? Results.Accepted()
+            : Results.Conflict(new { message = "A refresh is already in progress." });
+    }
+
+    // -------------------------------------------------------------------------
+    // Shared upsert helpers (also used by SnapshotBuilder)
+    // -------------------------------------------------------------------------
+
+    internal static async Task UpsertProviderGroupsAsync(
+        ApplicationDbContext db,
+        string providerId,
+        IReadOnlyList<ParsedProviderChannel> entries,
+        DateTime now,
+        CancellationToken cancellationToken)
+    {
+        var groupNames = entries
+            .Where(x => !string.IsNullOrWhiteSpace(x.GroupTitle))
+            .Select(x => x.GroupTitle!)
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
+
+        var existingGroups = await db.ProviderGroups
+            .Where(x => x.ProviderId == providerId)
+            .ToListAsync(cancellationToken);
+
+        var byName = existingGroups.ToDictionary(x => x.RawName, StringComparer.Ordinal);
+
+        foreach (var groupName in groupNames)
+        {
+            if (byName.TryGetValue(groupName, out var existing))
+            {
+                existing.LastSeenUtc = now;
+                existing.Active = true;
+                continue;
+            }
+
+            db.ProviderGroups.Add(new ProviderGroup
+            {
+                ProviderGroupId = Guid.NewGuid().ToString(),
+                ProviderId = providerId,
+                RawName = groupName,
+                FirstSeenUtc = now,
+                LastSeenUtc = now,
+                Active = true,
+            });
+        }
+
+        foreach (var group in existingGroups)
+        {
+            if (!groupNames.Contains(group.RawName, StringComparer.Ordinal))
+            {
+                group.Active = false;
+            }
+        }
+
+        await db.SaveChangesAsync(cancellationToken);
+    }
+
+    internal static async Task UpsertProviderChannelsAsync(
+        ApplicationDbContext db,
+        string providerId,
+        string fetchRunId,
+        IReadOnlyList<ParsedProviderChannel> entries,
+        DateTime now,
+        CancellationToken cancellationToken)
+    {
+        var groupLookup = await db.ProviderGroups
+            .AsNoTracking()
+            .Where(x => x.ProviderId == providerId)
+            .ToDictionaryAsync(x => x.RawName, x => x.ProviderGroupId, StringComparer.Ordinal, cancellationToken);
+
+        var keys = entries.Where(x => x.ProviderChannelKey is not null).Select(x => x.ProviderChannelKey!).Distinct(StringComparer.Ordinal).ToList();
+
+        var existingByKey = keys.Count == 0
+            ? new Dictionary<string, ProviderChannel>(StringComparer.Ordinal)
+            : await db.ProviderChannels
+                .Where(x => x.ProviderId == providerId && x.ProviderChannelKey != null && keys.Contains(x.ProviderChannelKey))
+                .ToDictionaryAsync(x => x.ProviderChannelKey!, StringComparer.Ordinal, cancellationToken);
+
+        var nullKeyChannels = await db.ProviderChannels
+            .Where(x => x.ProviderId == providerId && x.ProviderChannelKey == null)
+            .ToListAsync(cancellationToken);
+
+        var existingByComposite = new Dictionary<string, ProviderChannel>(StringComparer.Ordinal);
+        foreach (var channel in nullKeyChannels)
+        {
+            var composite = BuildNullKeyComposite(channel.DisplayName, channel.StreamUrl, channel.GroupTitle);
+            if (!existingByComposite.ContainsKey(composite))
+            {
+                existingByComposite[composite] = channel;
+            }
+        }
+
+        var seenIds = new HashSet<string>(StringComparer.Ordinal);
+
+        foreach (var entry in entries)
+        {
+            var providerGroupId = entry.GroupTitle is not null && groupLookup.TryGetValue(entry.GroupTitle, out var foundGroupId)
+                ? foundGroupId
+                : null;
+
+            ProviderChannel channel;
+            if (entry.ProviderChannelKey is not null)
+            {
+                if (!existingByKey.TryGetValue(entry.ProviderChannelKey, out channel!))
+                {
+                    channel = new ProviderChannel
+                    {
+                        ProviderChannelId = Guid.NewGuid().ToString(),
+                        ProviderId = providerId,
+                        ProviderChannelKey = entry.ProviderChannelKey,
+                        FirstSeenUtc = now,
+                    };
+
+                    db.ProviderChannels.Add(channel);
+                    existingByKey[entry.ProviderChannelKey] = channel;
+                }
+            }
+            else
+            {
+                var composite = BuildNullKeyComposite(entry.DisplayName, entry.StreamUrl, entry.GroupTitle);
+                if (!existingByComposite.TryGetValue(composite, out channel!))
+                {
+                    channel = new ProviderChannel
+                    {
+                        ProviderChannelId = Guid.NewGuid().ToString(),
+                        ProviderId = providerId,
+                        ProviderChannelKey = null,
+                        FirstSeenUtc = now,
+                    };
+
+                    db.ProviderChannels.Add(channel);
+                    existingByComposite[composite] = channel;
+                }
+            }
+
+            channel.ProviderChannelKey = ProviderFetcher.NormalizeProviderChannelKey(entry.ProviderChannelKey);
+            channel.DisplayName = entry.DisplayName;
+            channel.TvgId = entry.TvgId;
+            channel.TvgName = entry.TvgName;
+            channel.LogoUrl = entry.LogoUrl;
+            channel.StreamUrl = entry.StreamUrl;
+            channel.GroupTitle = entry.GroupTitle;
+            channel.ProviderGroupId = providerGroupId;
+            channel.IsEvent = false;
+            channel.EventStartUtc = null;
+            channel.EventEndUtc = null;
+            channel.LastSeenUtc = now;
+            channel.Active = true;
+            channel.LastFetchRunId = fetchRunId;
+
+            seenIds.Add(channel.ProviderChannelId);
+        }
+
+        var activeChannels = await db.ProviderChannels
+            .Where(x => x.ProviderId == providerId && x.Active)
+            .ToListAsync(cancellationToken);
+
+        foreach (var channel in activeChannels)
+        {
+            if (!seenIds.Contains(channel.ProviderChannelId))
+            {
+                channel.Active = false;
+            }
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Private helpers
+    // -------------------------------------------------------------------------
 
     private static async Task<List<ProviderDto>> BuildProviderDtosAsync(ApplicationDbContext db, IReadOnlyCollection<Provider> providers, CancellationToken cancellationToken)
     {
@@ -430,6 +640,7 @@ public static class ProviderApiEndpoints
                     HeadersJson = provider.HeadersJson,
                     UserAgent = provider.UserAgent,
                     Enabled = provider.Enabled,
+                    IsActive = provider.IsActive,
                     TimeoutSeconds = provider.TimeoutSeconds,
                     AssociatedProfileIds = associatedProfileIds,
                     LastRefresh = latestRefresh is null
@@ -556,7 +767,7 @@ public static class ProviderApiEndpoints
         try
         {
             using var document = JsonDocument.Parse(value);
-            if (document.RootElement.ValueKind != JsonValueKind.Object)
+            if (document.RootElement.ValueKind != System.Text.Json.JsonValueKind.Object)
             {
                 error = "headersJson must be a JSON object of string:string pairs.";
                 return false;
@@ -564,7 +775,7 @@ public static class ProviderApiEndpoints
 
             foreach (var property in document.RootElement.EnumerateObject())
             {
-                if (property.Value.ValueKind != JsonValueKind.String)
+                if (property.Value.ValueKind != System.Text.Json.JsonValueKind.String)
                 {
                     error = "headersJson values must be strings.";
                     return false;
@@ -580,37 +791,6 @@ public static class ProviderApiEndpoints
         }
     }
 
-    private static void ApplyHeadersFromJson(HttpClient client, string? headersJson)
-    {
-        if (string.IsNullOrWhiteSpace(headersJson))
-        {
-            return;
-        }
-
-        using var document = JsonDocument.Parse(headersJson);
-        if (document.RootElement.ValueKind != JsonValueKind.Object)
-        {
-            return;
-        }
-
-        foreach (var property in document.RootElement.EnumerateObject())
-        {
-            if (property.Value.ValueKind != JsonValueKind.String)
-            {
-                continue;
-            }
-
-            var value = property.Value.GetString();
-            if (string.IsNullOrWhiteSpace(value))
-            {
-                continue;
-            }
-
-            client.DefaultRequestHeaders.Remove(property.Name);
-            client.DefaultRequestHeaders.TryAddWithoutValidation(property.Name, value);
-        }
-    }
-
     private static int? NormalizeSampleSize(int? value)
     {
         if (value is null)
@@ -619,202 +799,6 @@ public static class ProviderApiEndpoints
         }
 
         return value is < 1 or > 50 ? null : value;
-    }
-
-    private static ParsedChannel ParseEntry(M3uEntry entry)
-    {
-        var metadata = entry.MetadataLines.FirstOrDefault() ?? string.Empty;
-        var attributes = MetadataAttributeRegex.Matches(metadata)
-            .Select(match => (Key: match.Groups["key"].Value, Value: match.Groups["value"].Value))
-            .GroupBy(x => x.Key, StringComparer.OrdinalIgnoreCase)
-            .ToDictionary(x => x.Key, x => x.First().Value, StringComparer.OrdinalIgnoreCase);
-
-        attributes.TryGetValue("tvg-id", out var tvgId);
-        attributes.TryGetValue("tvg-name", out var tvgName);
-        attributes.TryGetValue("tvg-logo", out var logoUrl);
-        attributes.TryGetValue("group-title", out var groupTitleAttr);
-
-        var groupTitle = !string.IsNullOrWhiteSpace(entry.Group)
-            ? entry.Group!.Trim()
-            : string.IsNullOrWhiteSpace(groupTitleAttr) ? null : groupTitleAttr.Trim();
-
-        var providerChannelKey = NormalizeProviderChannelKey(tvgId);
-        var displayName = string.IsNullOrWhiteSpace(entry.Title)
-            ? (string.IsNullOrWhiteSpace(tvgName) ? "Unnamed Channel" : tvgName.Trim())
-            : entry.Title.Trim();
-
-        return new ParsedChannel
-        {
-            ProviderChannelKey = providerChannelKey,
-            DisplayName = displayName,
-            TvgId = string.IsNullOrWhiteSpace(tvgId) ? null : tvgId.Trim(),
-            TvgName = string.IsNullOrWhiteSpace(tvgName) ? null : tvgName.Trim(),
-            LogoUrl = string.IsNullOrWhiteSpace(logoUrl) ? null : logoUrl.Trim(),
-            StreamUrl = entry.Url!.Trim(),
-            GroupTitle = groupTitle,
-        };
-    }
-
-    private static string? NormalizeProviderChannelKey(string? value)
-        => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
-
-    private static async Task UpsertProviderGroupsAsync(
-        ApplicationDbContext db,
-        string providerId,
-        IReadOnlyList<ParsedChannel> entries,
-        DateTime now,
-        CancellationToken cancellationToken)
-    {
-        var groupNames = entries
-            .Where(x => !string.IsNullOrWhiteSpace(x.GroupTitle))
-            .Select(x => x.GroupTitle!)
-            .Distinct(StringComparer.Ordinal)
-            .ToList();
-
-        var existingGroups = await db.ProviderGroups
-            .Where(x => x.ProviderId == providerId)
-            .ToListAsync(cancellationToken);
-
-        var byName = existingGroups.ToDictionary(x => x.RawName, StringComparer.Ordinal);
-
-        foreach (var groupName in groupNames)
-        {
-            if (byName.TryGetValue(groupName, out var existing))
-            {
-                existing.LastSeenUtc = now;
-                existing.Active = true;
-                continue;
-            }
-
-            db.ProviderGroups.Add(new ProviderGroup
-            {
-                ProviderGroupId = Guid.NewGuid().ToString(),
-                ProviderId = providerId,
-                RawName = groupName,
-                FirstSeenUtc = now,
-                LastSeenUtc = now,
-                Active = true,
-            });
-        }
-
-        foreach (var group in existingGroups)
-        {
-            if (!groupNames.Contains(group.RawName, StringComparer.Ordinal))
-            {
-                group.Active = false;
-            }
-        }
-
-        await db.SaveChangesAsync(cancellationToken);
-    }
-
-    private static async Task UpsertProviderChannelsAsync(
-        ApplicationDbContext db,
-        string providerId,
-        string fetchRunId,
-        IReadOnlyList<ParsedChannel> entries,
-        DateTime now,
-        CancellationToken cancellationToken)
-    {
-        var groupLookup = await db.ProviderGroups
-            .AsNoTracking()
-            .Where(x => x.ProviderId == providerId)
-            .ToDictionaryAsync(x => x.RawName, x => x.ProviderGroupId, StringComparer.Ordinal, cancellationToken);
-
-        var keys = entries.Where(x => x.ProviderChannelKey is not null).Select(x => x.ProviderChannelKey!).Distinct(StringComparer.Ordinal).ToList();
-
-        var existingByKey = keys.Count == 0
-            ? new Dictionary<string, ProviderChannel>(StringComparer.Ordinal)
-            : await db.ProviderChannels
-                .Where(x => x.ProviderId == providerId && x.ProviderChannelKey != null && keys.Contains(x.ProviderChannelKey))
-                .ToDictionaryAsync(x => x.ProviderChannelKey!, StringComparer.Ordinal, cancellationToken);
-
-        var nullKeyChannels = await db.ProviderChannels
-            .Where(x => x.ProviderId == providerId && x.ProviderChannelKey == null)
-            .ToListAsync(cancellationToken);
-
-        var existingByComposite = new Dictionary<string, ProviderChannel>(StringComparer.Ordinal);
-        foreach (var channel in nullKeyChannels)
-        {
-            var composite = BuildNullKeyComposite(channel.DisplayName, channel.StreamUrl, channel.GroupTitle);
-            if (!existingByComposite.ContainsKey(composite))
-            {
-                existingByComposite[composite] = channel;
-            }
-        }
-
-        var seenIds = new HashSet<string>(StringComparer.Ordinal);
-
-        foreach (var entry in entries)
-        {
-            var providerGroupId = entry.GroupTitle is not null && groupLookup.TryGetValue(entry.GroupTitle, out var foundGroupId)
-                ? foundGroupId
-                : null;
-
-            ProviderChannel channel;
-            if (entry.ProviderChannelKey is not null)
-            {
-                if (!existingByKey.TryGetValue(entry.ProviderChannelKey, out channel!))
-                {
-                    channel = new ProviderChannel
-                    {
-                        ProviderChannelId = Guid.NewGuid().ToString(),
-                        ProviderId = providerId,
-                        ProviderChannelKey = entry.ProviderChannelKey,
-                        FirstSeenUtc = now,
-                    };
-
-                    db.ProviderChannels.Add(channel);
-                    existingByKey[entry.ProviderChannelKey] = channel;
-                }
-            }
-            else
-            {
-                var composite = BuildNullKeyComposite(entry.DisplayName, entry.StreamUrl, entry.GroupTitle);
-                if (!existingByComposite.TryGetValue(composite, out channel!))
-                {
-                    channel = new ProviderChannel
-                    {
-                        ProviderChannelId = Guid.NewGuid().ToString(),
-                        ProviderId = providerId,
-                        ProviderChannelKey = null,
-                        FirstSeenUtc = now,
-                    };
-
-                    db.ProviderChannels.Add(channel);
-                    existingByComposite[composite] = channel;
-                }
-            }
-
-            channel.ProviderChannelKey = NormalizeProviderChannelKey(entry.ProviderChannelKey);
-            channel.DisplayName = entry.DisplayName;
-            channel.TvgId = entry.TvgId;
-            channel.TvgName = entry.TvgName;
-            channel.LogoUrl = entry.LogoUrl;
-            channel.StreamUrl = entry.StreamUrl;
-            channel.GroupTitle = entry.GroupTitle;
-            channel.ProviderGroupId = providerGroupId;
-            channel.IsEvent = false;
-            channel.EventStartUtc = null;
-            channel.EventEndUtc = null;
-            channel.LastSeenUtc = now;
-            channel.Active = true;
-            channel.LastFetchRunId = fetchRunId;
-
-            seenIds.Add(channel.ProviderChannelId);
-        }
-
-        var activeChannels = await db.ProviderChannels
-            .Where(x => x.ProviderId == providerId && x.Active)
-            .ToListAsync(cancellationToken);
-
-        foreach (var channel in activeChannels)
-        {
-            if (!seenIds.Contains(channel.ProviderChannelId))
-            {
-                channel.Active = false;
-            }
-        }
     }
 
     private static string BuildNullKeyComposite(string displayName, string streamUrl, string? groupTitle)
@@ -914,17 +898,6 @@ public static class ProviderApiEndpoints
         };
 
         return builder.Uri.GetLeftPart(UriPartial.Path);
-    }
-
-    private sealed class ParsedChannel
-    {
-        public string? ProviderChannelKey { get; init; }
-        public string DisplayName { get; init; } = string.Empty;
-        public string? TvgId { get; init; }
-        public string? TvgName { get; init; }
-        public string? LogoUrl { get; init; }
-        public string StreamUrl { get; init; } = string.Empty;
-        public string? GroupTitle { get; init; }
     }
 
     private sealed class PreviewChannelProjection

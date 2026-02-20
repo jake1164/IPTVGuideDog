@@ -45,7 +45,10 @@ $RECYCLE.BIN/
 *.sln.iml
 
 # VS Code
-.vscode/
+!.vscode/
+.vscode/*
+!.vscode/launch.json
+!.vscode/tasks.json
 
 # Test results
 TestResults/
