@@ -21,7 +21,7 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=build /app/publish ./
-RUN mkdir -p /app/Data /app/snapshots \
+RUN mkdir -p /app/Data \
     && chown -R app:app /app
 
 USER app
@@ -29,7 +29,7 @@ USER app
 ENV ASPNETCORE_URLS=http://+:8080 \
     ASPNETCORE_HTTP_PORTS=8080
 
-VOLUME ["/app/Data", "/app/snapshots"]
+VOLUME ["/app/Data"]
 EXPOSE 8080
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \

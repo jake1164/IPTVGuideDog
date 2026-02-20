@@ -30,49 +30,56 @@ public static class CompatibilityEndpoints
 
     private static async Task ServeM3uAsync(HttpContext ctx, ApplicationDbContext db, CancellationToken cancellationToken)
     {
-        var snapshot = await db.Snapshots
-            .AsNoTracking()
-            .FirstOrDefaultAsync(x => x.Status == "active", cancellationToken);
-
-        if (snapshot is null)
-        {
-            ctx.Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
-            ctx.Response.Headers.Append("Retry-After", "60");
-            await ctx.Response.WriteAsync("No active snapshot available. Waiting for first refresh.", cancellationToken);
-            return;
-        }
-
-        List<ChannelIndexEntry> channels;
         try
         {
-            var json = await File.ReadAllTextAsync(snapshot.ChannelIndexPath, cancellationToken);
-            channels = JsonSerializer.Deserialize<List<ChannelIndexEntry>>(json, JsonOptions) ?? [];
+            var snapshot = await db.Snapshots
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x => x.Status == "active", cancellationToken);
+
+            if (snapshot is null)
+            {
+                ctx.Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
+                ctx.Response.Headers.Append("Retry-After", "60");
+                await ctx.Response.WriteAsync("No active snapshot available. Waiting for first refresh.", cancellationToken);
+                return;
+            }
+
+            List<ChannelIndexEntry> channels;
+            try
+            {
+                var json = await File.ReadAllTextAsync(snapshot.ChannelIndexPath, cancellationToken);
+                channels = JsonSerializer.Deserialize<List<ChannelIndexEntry>>(json, JsonOptions) ?? [];
+            }
+            catch (Exception ex) when (ex is IOException or JsonException)
+            {
+                ctx.Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
+                ctx.Response.Headers.Append("Retry-After", "30");
+                await ctx.Response.WriteAsync("Active snapshot data is unavailable.", cancellationToken);
+                return;
+            }
+
+            var baseUrl = $"{ctx.Request.Scheme}://{ctx.Request.Host}";
+            var xmltvUrl = $"{baseUrl}/xmltv/guidedog.xml";
+
+            ctx.Response.ContentType = "application/x-mpegurl; charset=utf-8";
+
+            var sb = new StringBuilder();
+            sb.Append($"#EXTM3U url-tvg=\"{xmltvUrl}\" x-tvg-url=\"{xmltvUrl}\"\n");
+
+            foreach (var channel in channels)
+            {
+                sb.Append(BuildExtInf(channel));
+                sb.Append('\n');
+                sb.Append($"{baseUrl}/stream/{channel.StreamKey}");
+                sb.Append('\n');
+            }
+
+            await ctx.Response.WriteAsync(sb.ToString(), Encoding.UTF8, cancellationToken);
         }
-        catch (Exception ex) when (ex is IOException or JsonException)
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
-            ctx.Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
-            ctx.Response.Headers.Append("Retry-After", "30");
-            await ctx.Response.WriteAsync("Active snapshot data is unavailable.", cancellationToken);
-            return;
+            // Client disconnected before response completed
         }
-
-        var baseUrl = $"{ctx.Request.Scheme}://{ctx.Request.Host}";
-        var xmltvUrl = $"{baseUrl}/xmltv/guidedog.xml";
-
-        ctx.Response.ContentType = "application/x-mpegurl; charset=utf-8";
-
-        var sb = new StringBuilder();
-        sb.Append($"#EXTM3U url-tvg=\"{xmltvUrl}\" x-tvg-url=\"{xmltvUrl}\"\n");
-
-        foreach (var channel in channels)
-        {
-            sb.Append(BuildExtInf(channel));
-            sb.Append('\n');
-            sb.Append($"{baseUrl}/stream/{channel.StreamKey}");
-            sb.Append('\n');
-        }
-
-        await ctx.Response.WriteAsync(sb.ToString(), Encoding.UTF8, cancellationToken);
     }
 
     // -------------------------------------------------------------------------
@@ -81,28 +88,35 @@ public static class CompatibilityEndpoints
 
     private static async Task ServeXmltvAsync(HttpContext ctx, ApplicationDbContext db, CancellationToken cancellationToken)
     {
-        var snapshot = await db.Snapshots
-            .AsNoTracking()
-            .FirstOrDefaultAsync(x => x.Status == "active", cancellationToken);
-
-        if (snapshot is null || string.IsNullOrWhiteSpace(snapshot.XmltvPath))
+        try
         {
-            ctx.Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
-            ctx.Response.Headers.Append("Retry-After", "60");
-            await ctx.Response.WriteAsync("No active snapshot available.", cancellationToken);
-            return;
-        }
+            var snapshot = await db.Snapshots
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x => x.Status == "active", cancellationToken);
 
-        if (!File.Exists(snapshot.XmltvPath))
+            if (snapshot is null || string.IsNullOrWhiteSpace(snapshot.XmltvPath))
+            {
+                ctx.Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
+                ctx.Response.Headers.Append("Retry-After", "60");
+                await ctx.Response.WriteAsync("No active snapshot available.", cancellationToken);
+                return;
+            }
+
+            if (!File.Exists(snapshot.XmltvPath))
+            {
+                ctx.Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
+                ctx.Response.Headers.Append("Retry-After", "30");
+                await ctx.Response.WriteAsync("Active snapshot data is unavailable.", cancellationToken);
+                return;
+            }
+
+            ctx.Response.ContentType = "application/xml; charset=utf-8";
+            await ctx.Response.SendFileAsync(snapshot.XmltvPath, cancellationToken);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
-            ctx.Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
-            ctx.Response.Headers.Append("Retry-After", "30");
-            await ctx.Response.WriteAsync("Active snapshot data is unavailable.", cancellationToken);
-            return;
+            // Client disconnected before response completed
         }
-
-        ctx.Response.ContentType = "application/xml; charset=utf-8";
-        await ctx.Response.SendFileAsync(snapshot.XmltvPath, cancellationToken);
     }
 
     // -------------------------------------------------------------------------
@@ -210,41 +224,48 @@ public static class CompatibilityEndpoints
 
     private static async Task ServeStatusAsync(HttpContext ctx, ApplicationDbContext db, CancellationToken cancellationToken)
     {
-        var activeSnapshot = await db.Snapshots
-            .AsNoTracking()
-            .FirstOrDefaultAsync(x => x.Status == "active", cancellationToken);
-
-        var activeProvider = await db.Providers
-            .AsNoTracking()
-            .FirstOrDefaultAsync(x => x.IsActive && x.Enabled, cancellationToken);
-
-        FetchRunInfo? lastRefresh = null;
-        if (activeProvider is not null)
+        try
         {
-            var run = await db.FetchRuns
+            var activeSnapshot = await db.Snapshots
                 .AsNoTracking()
-                .Where(x => x.ProviderId == activeProvider.ProviderId)
-                .OrderByDescending(x => x.StartedUtc)
-                .FirstOrDefaultAsync(cancellationToken);
+                .FirstOrDefaultAsync(x => x.Status == "active", cancellationToken);
 
-            if (run is not null)
+            var activeProvider = await db.Providers
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x => x.IsActive && x.Enabled, cancellationToken);
+
+            FetchRunInfo? lastRefresh = null;
+            if (activeProvider is not null)
             {
-                lastRefresh = new FetchRunInfo(run.Status, run.StartedUtc, run.FinishedUtc, run.ChannelCountSeen, run.ErrorSummary);
+                var run = await db.FetchRuns
+                    .AsNoTracking()
+                    .Where(x => x.ProviderId == activeProvider.ProviderId)
+                    .OrderByDescending(x => x.StartedUtc)
+                    .FirstOrDefaultAsync(cancellationToken);
+
+                if (run is not null)
+                {
+                    lastRefresh = new FetchRunInfo(run.Status, run.StartedUtc, run.FinishedUtc, run.ChannelCountSeen, run.ErrorSummary);
+                }
             }
+
+            var status = new StatusResponse(
+                Status: activeSnapshot is not null ? "ok" : "no_active_snapshot",
+                ActiveProvider: activeProvider is null ? null : new ActiveProviderInfo(activeProvider.ProviderId, activeProvider.Name),
+                ActiveSnapshot: activeSnapshot is null ? null : new ActiveSnapshotInfo(
+                    activeSnapshot.SnapshotId,
+                    activeSnapshot.ProfileId,
+                    activeSnapshot.CreatedUtc,
+                    activeSnapshot.ChannelCountPublished),
+                LastRefresh: lastRefresh);
+
+            ctx.Response.ContentType = "application/json; charset=utf-8";
+            await JsonSerializer.SerializeAsync(ctx.Response.Body, status, JsonOptions, cancellationToken);
         }
-
-        var status = new StatusResponse(
-            Status: activeSnapshot is not null ? "ok" : "no_active_snapshot",
-            ActiveProvider: activeProvider is null ? null : new ActiveProviderInfo(activeProvider.ProviderId, activeProvider.Name),
-            ActiveSnapshot: activeSnapshot is null ? null : new ActiveSnapshotInfo(
-                activeSnapshot.SnapshotId,
-                activeSnapshot.ProfileId,
-                activeSnapshot.CreatedUtc,
-                activeSnapshot.ChannelCountPublished),
-            LastRefresh: lastRefresh);
-
-        ctx.Response.ContentType = "application/json; charset=utf-8";
-        await JsonSerializer.SerializeAsync(ctx.Response.Body, status, JsonOptions, cancellationToken);
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            // Client disconnected before response completed
+        }
     }
 
     // -------------------------------------------------------------------------

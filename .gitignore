@@ -31,6 +31,7 @@ artifacts/
 *.bak
 *.sql
 *.sqlite
+*.db
 *.mdf
 *.ldf
 

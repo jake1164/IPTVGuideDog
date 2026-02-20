@@ -125,9 +125,9 @@ Notes:
 - [x] Status API (`GET /api/v1/providers/{id}/status`)
 - [x] Preview endpoint (`GET` + `POST /refresh-preview`)
 - [x] Snapshot trigger API (`POST /api/v1/snapshots/refresh` → 202/409)
-- [~] Blazor client integration
-  - [x] Providers page (CRUD + preview fully wired)
-  - [ ] Dashboard rewrite (replace placeholder with real V1 status: active provider, last refresh, active snapshot)
+- [x] Blazor client integration
+  - [x] Providers page (CRUD + preview fully wired; IsActive chip + Set Active star button added)
+  - [x] Dashboard rewrite (active provider, last refresh, active snapshot, output URLs + copy, trigger refresh)
 
 ---
 

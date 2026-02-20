@@ -77,7 +77,15 @@
                         <MudTh>Actions</MudTh>
                     </HeaderContent>
                     <RowTemplate>
-                        <MudTd>@context.Name</MudTd>
+                        <MudTd>
+                            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                                <span>@context.Name</span>
+                                @if (context.IsActive)
+                                {
+                                    <MudChip T="string" Size="Size.Small" Color="Color.Primary" Variant="Variant.Filled">Active</MudChip>
+                                }
+                            </MudStack>
+                        </MudTd>
                         <MudTd>@(context.Enabled ? "Yes" : "No")</MudTd>
                         <MudTd>@FormatRefresh(context.LastRefresh)</MudTd>
                         <MudTd>@FormatSnapshots(context.LatestSnapshots)</MudTd>
@@ -85,6 +93,12 @@
                             <MudStack Row="true" Spacing="1">
                                 <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" Size="Size.Small" OnClick="() => BeginEdit(context)" />
                                 <MudIconButton Icon="@(context.Enabled ? Icons.Material.Filled.ToggleOn : Icons.Material.Filled.ToggleOff)" Color="Color.Secondary" Size="Size.Small" OnClick="() => ToggleEnabledAsync(context)" />
+                                <MudIconButton Icon="@(context.IsActive ? Icons.Material.Filled.Star : Icons.Material.Outlined.StarBorder)"
+                                               Color="@(context.IsActive ? Color.Warning : Color.Default)"
+                                               Size="Size.Small"
+                                               Disabled="context.IsActive"
+                                               title="@(context.IsActive ? "Currently active provider" : "Set as active provider")"
+                                               OnClick="() => SetActiveAsync(context)" />
                                 <MudButton Variant="Variant.Text" Size="Size.Small" OnClick="() => LoadPreviewAsync(context.ProviderId)">Preview</MudButton>
                                 <MudButton Variant="Variant.Text" Size="Size.Small" OnClick="() => RefreshPreviewAsync(context.ProviderId)">Refresh & Preview</MudButton>
                             </MudStack>
@@ -324,6 +338,29 @@
         catch (Exception ex)
         {
             _error = $"Failed to toggle provider enabled: {ex.Message}";
+        }
+    }
+
+    private async Task SetActiveAsync(ProviderDto provider)
+    {
+        _error = null;
+
+        try
+        {
+            var response = await Http.PatchAsync($"/api/v1/providers/{provider.ProviderId}/active",
+                JsonContent.Create(new SetProviderActiveRequest { IsActive = true }));
+
+            if (!response.IsSuccessStatusCode)
+            {
+                _error = await ReadErrorAsync(response);
+                return;
+            }
+
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = $"Failed to set provider active: {ex.Message}";
         }
     }
 
