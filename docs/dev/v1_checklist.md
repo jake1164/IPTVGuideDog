@@ -90,26 +90,26 @@ Locked schema decisions (authoritative):
 
 ## 4) Snapshot Fetcher (Hosted Service)
 
-- [ ] Scheduled refresh
-- [ ] On-demand refresh trigger
-- [ ] Fetch playlist + EPG
-- [ ] Parse using CLI parser logic
-- [ ] Populate provider_channels + provider_groups
-- [ ] Write snapshot files:
+- [x] Scheduled refresh
+- [x] On-demand refresh trigger
+- [x] Fetch playlist + EPG
+- [x] Parse using CLI parser logic
+- [x] Populate provider_channels + provider_groups
+- [x] Write snapshot files:
       snapshots/{profile}/{snapshotId}/
-- [ ] Insert snapshot record (staged → active)
-- [ ] Update fetch_runs
-- [ ] Preserve last-known-good on failure
+- [x] Insert snapshot record (staged → active)
+- [x] Update fetch_runs
+- [x] Preserve last-known-good on failure
 
 ---
 
 ## 5) Serving Endpoints
 
-- [ ] GET /m3u/guidedog.m3u
-- [ ] GET /xmltv/guidedog.xml
-- [ ] GET /stream/<streamKey>
-- [ ] GET /status
-- [ ] GET /health
+- [x] GET /m3u/guidedog.m3u
+- [x] GET /xmltv/guidedog.xml
+- [x] GET /stream/<streamKey>
+- [x] GET /status
+- [x] GET /health
 
 Notes:
 - Output name is locked to `guidedog` in Core (`/m3u/guidedog.m3u`, `/xmltv/guidedog.xml`)
@@ -121,9 +121,10 @@ Notes:
 
 ## 6) Wiring UI to API
 
-- [x] Provider CRUD API (`GET`, `POST`, `PUT`, `PATCH /enabled`)
+- [x] Provider CRUD API (`GET`, `POST`, `PUT`, `PATCH /enabled`, `PATCH /active`)
 - [x] Status API (`GET /api/v1/providers/{id}/status`)
 - [x] Preview endpoint (`GET` + `POST /refresh-preview`)
+- [x] Snapshot trigger API (`POST /api/v1/snapshots/refresh` → 202/409)
 - [~] Blazor client integration
   - [x] Providers page (CRUD + preview fully wired)
   - [ ] Dashboard rewrite (replace placeholder with real V1 status: active provider, last refresh, active snapshot)

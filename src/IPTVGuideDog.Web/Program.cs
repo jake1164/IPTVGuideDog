@@ -42,6 +42,12 @@ builder.Services.AddScoped(sp =>
 });
 builder.Services.AddSingleton<PlaylistParser>();
 
+// Named HttpClient for stream relay — no body timeout (live streams run indefinitely)
+builder.Services.AddHttpClient("stream-relay", client =>
+{
+    client.Timeout = Timeout.InfiniteTimeSpan;
+});
+
 builder.Services.Configure<RefreshOptions>(builder.Configuration.GetSection("IPTVGuideDog:Refresh"));
 builder.Services.Configure<SnapshotOptions>(builder.Configuration.GetSection("IPTVGuideDog:Snapshot"));
 builder.Services.AddSingleton<ProviderFetcher>();
@@ -94,6 +100,7 @@ app.MapRazorComponents<App>()
 // Add additional endpoints required by the Identity /Account Razor components.
 app.MapAdditionalIdentityEndpoints();
 app.MapProviderApiEndpoints();
+app.MapCompatibilityEndpoints();
 app.MapHealthChecks("/health");
 
 app.Run();
