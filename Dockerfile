@@ -1,26 +1,38 @@
 # syntax=docker/dockerfile:1
 
-ARG DOTNET_VERSION=10.0-preview
+ARG DOTNET_VERSION=10.0
 
 FROM mcr.microsoft.com/dotnet/sdk:${DOTNET_VERSION} AS build
-ARG TARGET_PROJECT=src/Web/IPTVGuideDog.Web.csproj
-ARG TARGET_ASSEMBLY=IPTVGuideDog.Web
-WORKDIR /source
+WORKDIR /src
 
-COPY IPTVGuideDog.sln ./
-COPY src/Web/IPTVGuideDog.Web.csproj src/Web/
-COPY src/SocketHost/IPTVGuideDog.SocketHost.csproj src/SocketHost/
-COPY src/Shared/IPTVGuideDog.Domain.csproj src/Shared/
-RUN dotnet restore IPTVGuideDog.sln
+COPY global.json ./
+COPY src/IPTVGuideDog.Web/IPTVGuideDog.Web.csproj src/IPTVGuideDog.Web/
+COPY src/IPTVGuideDog.Core/IPTVGuideDog.Core.csproj src/IPTVGuideDog.Core/
+RUN dotnet restore src/IPTVGuideDog.Web/IPTVGuideDog.Web.csproj
 
-COPY . .
-RUN dotnet publish ${TARGET_PROJECT} -c Release -o /app/publish /p:UseAppHost=false
+COPY src/ src/
+RUN dotnet publish src/IPTVGuideDog.Web/IPTVGuideDog.Web.csproj -c Release -o /app/publish --no-restore /p:UseAppHost=false
 
 FROM mcr.microsoft.com/dotnet/aspnet:${DOTNET_VERSION} AS final
-ARG TARGET_ASSEMBLY=IPTVGuideDog.Web
 WORKDIR /app
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY --from=build /app/publish ./
-RUN ln -s ${TARGET_ASSEMBLY}.dll service.dll
-ENV ASPNETCORE_URLS=http://+:8080
+RUN mkdir -p /app/Data /app/snapshots \
+    && chown -R app:app /app
+
+USER app
+
+ENV ASPNETCORE_URLS=http://+:8080 \
+    ASPNETCORE_HTTP_PORTS=8080
+
+VOLUME ["/app/Data", "/app/snapshots"]
 EXPOSE 8080
-ENTRYPOINT ["dotnet", "service.dll"]
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
+    CMD curl --fail --silent http://127.0.0.1:8080/health || exit 1
+
+ENTRYPOINT ["dotnet", "IPTVGuideDog.Web.dll"]

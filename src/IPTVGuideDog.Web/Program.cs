@@ -30,6 +30,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlite(connectionString));
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 builder.Services.AddProblemDetails();
+builder.Services.AddHealthChecks();
 builder.Services.AddValidation();
 builder.Services.AddHttpClient();
 builder.Services.AddScoped(sp =>
@@ -52,6 +53,12 @@ builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSe
 builder.Services.AddMudServices();
 
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    db.Database.Migrate();
+}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -76,6 +83,7 @@ app.MapRazorComponents<App>()
 // Add additional endpoints required by the Identity /Account Razor components.
 app.MapAdditionalIdentityEndpoints();
 app.MapProviderApiEndpoints();
+app.MapHealthChecks("/health");
 
 app.Run();
 
