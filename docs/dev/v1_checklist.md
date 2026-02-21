@@ -158,10 +158,10 @@ Remove artifacts from the pre-DB socket-host architecture before packaging.
 
 ## 9) Tests (Lightweight)
 
-- [ ] Provider validation
-- [ ] Snapshot success/failure handling
-- [ ] Preview endpoint output
-- [ ] Stream timeout behavior
+- [x] Provider validation
+- [x] Snapshot success/failure handling
+- [x] Preview endpoint output
+- [x] Stream timeout behavior
 
 ---
 

@@ -932,7 +932,7 @@ public static class ProviderApiEndpoints
     private static string BuildNullKeyComposite(string displayName, string streamUrl, string? groupTitle)
         => $"{displayName}\u001f{streamUrl}\u001f{groupTitle}";
 
-    private static async Task<ProviderPreviewDto> BuildPreviewAsync(
+    internal static async Task<ProviderPreviewDto> BuildPreviewAsync(
         ApplicationDbContext db,
         string providerId,
         string fetchRunId,
@@ -1010,7 +1010,7 @@ public static class ProviderApiEndpoints
         };
     }
 
-    private static string? RedactStreamUrl(string? value)
+    internal static string? RedactStreamUrl(string? value)
     {
         if (string.IsNullOrWhiteSpace(value) || !Uri.TryCreate(value, UriKind.Absolute, out var uri))
         {
