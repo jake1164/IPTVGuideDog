@@ -25,6 +25,9 @@ public static class ProviderApiEndpoints
         providers.MapGet("/{providerId}/preview", GetPreviewAsync);
         providers.MapPost("/{providerId}/refresh-preview", RefreshPreviewAsync);
         providers.MapGet("/{providerId}/status", GetProviderStatusAsync);
+        providers.MapGet("/config/available", GetAvailableConfigProvidersAsync);
+        providers.MapPost("/config/import", ImportConfigProviderAsync);
+        providers.MapGet("/{providerId}/health", GetProviderHealthAsync);
 
         var snapshots = app.MapGroup("/api/v1/snapshots");
         snapshots.MapPost("/refresh", TriggerRefreshAsync);
@@ -270,6 +273,131 @@ public static class ProviderApiEndpoints
             LastRefresh = providerDto.LastRefresh,
             LatestSnapshots = providerDto.LatestSnapshots,
         });
+    }
+
+    // -------------------------------------------------------------------------
+    // Config YAML Import
+    // -------------------------------------------------------------------------
+
+    private static async Task<Ok<List<ConfigYamlProviderDto>>> GetAvailableConfigProvidersAsync(
+        ConfigYamlService configService,
+        EnvironmentVariableService envVarService,
+        CancellationToken cancellationToken)
+    {
+        var configProviders = await configService.LoadProvidersAsync();
+        var dtos = configProviders.Select(p => new ConfigYamlProviderDto
+        {
+            Name = p.Name,
+            PlaylistUrl = p.PlaylistUrl,
+            XmltvUrl = p.XmltvUrl,
+            RequiresEnvVars = envVarService.RequiresSubstitution(p.PlaylistUrl),
+            MissingEnvVars = envVarService.ValidateVariables(p.PlaylistUrl).Missing.ToList(),
+        }).ToList();
+
+        return TypedResults.Ok(dtos);
+    }
+
+    private static async Task<Results<Created<ProviderDto>, ValidationProblem, Conflict<string>>> ImportConfigProviderAsync(
+        ImportConfigProviderRequest request,
+        ConfigYamlService configService,
+        EnvironmentVariableService envVarService,
+        ApplicationDbContext db,
+        CancellationToken cancellationToken)
+    {
+        var configProviders = await configService.LoadProvidersAsync();
+        var configProvider = configProviders.FirstOrDefault(p => p.Name == request.Name);
+
+        if (configProvider is null)
+        {
+            return TypedResults.ValidationProblem(new Dictionary<string, string[]>
+            {
+                ["name"] = [$"Provider '{request.Name}' not found in config.yaml"]
+            });
+        }
+
+        // Validate that all required env vars are defined
+        var (isValid, missing) = envVarService.ValidateVariables(configProvider.PlaylistUrl);
+        if (!isValid)
+        {
+            return TypedResults.ValidationProblem(new Dictionary<string, string[]>
+            {
+                ["environment"] = [$"Missing environment variables: {string.Join(", ", missing)}"]
+            });
+        }
+
+        // Check if provider already exists
+        var existing = await db.Providers.AsNoTracking().FirstOrDefaultAsync(p => p.Name == configProvider.Name, cancellationToken);
+        if (existing is not null)
+        {
+            return TypedResults.Conflict($"Provider '{configProvider.Name}' already exists");
+        }
+
+        var now = DateTime.UtcNow;
+        var provider = new Provider
+        {
+            ProviderId = Guid.NewGuid().ToString(),
+            Name = configProvider.Name,
+            PlaylistUrl = configProvider.PlaylistUrl,
+            XmltvUrl = configProvider.XmltvUrl,
+            HeadersJson = configProvider.Headers is not null
+                ? JsonSerializer.Serialize(configProvider.Headers)
+                : null,
+            UserAgent = configProvider.UserAgent,
+            TimeoutSeconds = configProvider.TimeoutSeconds,
+            Enabled = configProvider.Enabled,
+            IsActive = false,
+            ConfigSourcePath = configProvider.SourcePath,
+            NeedsEnvVarSubstitution = envVarService.RequiresSubstitution(configProvider.PlaylistUrl),
+            CreatedUtc = now,
+            UpdatedUtc = now,
+        };
+
+        db.Providers.Add(provider);
+        await db.SaveChangesAsync(cancellationToken);
+
+        var dto = (await BuildProviderDtosAsync(db, [provider], cancellationToken)).Single();
+        return TypedResults.Created($"/api/v1/providers/{provider.ProviderId}", dto);
+    }
+
+    // -------------------------------------------------------------------------
+    // Provider Health Check
+    // -------------------------------------------------------------------------
+
+    private static async Task<Results<Ok<ProviderHealthDto>, NotFound>> GetProviderHealthAsync(
+        string providerId,
+        ApplicationDbContext db,
+        EnvironmentVariableService envVarService,
+        CancellationToken cancellationToken)
+    {
+        var provider = await db.Providers.AsNoTracking().SingleOrDefaultAsync(x => x.ProviderId == providerId, cancellationToken);
+        if (provider is null)
+        {
+            return TypedResults.NotFound();
+        }
+
+        var (isValid, missing) = envVarService.ValidateVariables(provider.PlaylistUrl);
+        var lastFetchRun = await db.FetchRuns
+            .AsNoTracking()
+            .Where(x => x.ProviderId == providerId)
+            .OrderByDescending(x => x.StartedUtc)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        var health = new ProviderHealthDto
+        {
+            ProviderId = providerId,
+            Name = provider.Name,
+            CanFetch = isValid && provider.Enabled,
+            Status = !provider.Enabled ? "disabled"
+                : !isValid ? "missing-env-vars"
+                : lastFetchRun?.Status == "ok" ? "healthy"
+                : lastFetchRun is null ? "untested"
+                : "unhealthy",
+            MissingEnvVars = missing.ToList(),
+            LastError = lastFetchRun?.ErrorSummary,
+            LastSuccessFetch = lastFetchRun?.Status == "ok" ? lastFetchRun.FinishedUtc : null,
+        };
+
+        return TypedResults.Ok(health);
     }
 
     private static async Task<Results<Ok<ProviderPreviewDto>, NotFound, ProblemHttpResult, ValidationProblem>> GetPreviewAsync(

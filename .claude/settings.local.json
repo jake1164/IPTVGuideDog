@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "mcp__mcpjungle__mslearn__microsoft_docs_search"
+      "mcp__mcpjungle__mslearn__microsoft_docs_search",
+      "Bash(dotnet build:*)"
     ]
   }
 }

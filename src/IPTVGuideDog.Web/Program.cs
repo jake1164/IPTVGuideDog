@@ -41,6 +41,8 @@ builder.Services.AddScoped(sp =>
     return new HttpClient { BaseAddress = new Uri(navigation.BaseUri) };
 });
 builder.Services.AddSingleton<PlaylistParser>();
+builder.Services.AddSingleton<EnvironmentVariableService>();
+builder.Services.AddScoped<ConfigYamlService>();
 
 // Named HttpClient for stream relay — no body timeout (live streams run indefinitely)
 builder.Services.AddHttpClient("stream-relay", client =>
@@ -154,6 +156,11 @@ static void EnsureSqliteMigrationHistoryBaseline(ApplicationDbContext db)
     if (TableHasColumn(connection, "providers", "is_active"))
     {
         appliedMigrations.Add("20260220161132_AddProviderIsActive");
+    }
+
+    if (TableHasColumn(connection, "providers", "config_source_path"))
+    {
+        appliedMigrations.Add("20260220200000_AddConfigYamlSupport");
     }
 
     if (appliedMigrations.Count == 0)

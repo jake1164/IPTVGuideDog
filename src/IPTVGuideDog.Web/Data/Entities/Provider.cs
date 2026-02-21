@@ -14,6 +14,10 @@ public sealed class Provider
     public DateTime CreatedUtc { get; set; }
     public DateTime UpdatedUtc { get; set; }
 
+    // Config source tracking
+    public string? ConfigSourcePath { get; set; }  // Path to config.yaml if imported from there
+    public bool NeedsEnvVarSubstitution { get; set; }  // True if URL contains %VAR% placeholders
+
     public ICollection<ProfileProvider> ProfileProviders { get; set; } = new List<ProfileProvider>();
     public ICollection<FetchRun> FetchRuns { get; set; } = new List<FetchRun>();
     public ICollection<ProviderGroup> ProviderGroups { get; set; } = new List<ProviderGroup>();

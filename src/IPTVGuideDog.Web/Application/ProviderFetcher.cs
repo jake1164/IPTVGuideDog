@@ -8,7 +8,10 @@ namespace IPTVGuideDog.Web.Application;
 /// Singleton service that fetches and parses provider playlists and XMLTV guides.
 /// Stateless — safe to use from background services.
 /// </summary>
-public sealed class ProviderFetcher(IHttpClientFactory httpClientFactory, PlaylistParser playlistParser)
+public sealed class ProviderFetcher(
+    IHttpClientFactory httpClientFactory,
+    PlaylistParser playlistParser,
+    EnvironmentVariableService envVarService)
 {
     private static readonly Regex MetadataAttributeRegex =
         new("(?<key>[A-Za-z0-9\\-]+)=\"(?<value>[^\"]*)\"", RegexOptions.Compiled);
@@ -35,7 +38,8 @@ public sealed class ProviderFetcher(IHttpClientFactory httpClientFactory, Playli
                 client.DefaultRequestHeaders.UserAgent.ParseAdd(provider.UserAgent);
             }
 
-            content = await client.GetStringAsync(provider.PlaylistUrl, timeoutCts.Token);
+            var playlistUrl = SubstituteProviderUrl(provider.PlaylistUrl);
+            content = await client.GetStringAsync(playlistUrl, timeoutCts.Token);
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
         {
@@ -80,7 +84,8 @@ public sealed class ProviderFetcher(IHttpClientFactory httpClientFactory, Playli
                 client.DefaultRequestHeaders.UserAgent.ParseAdd(provider.UserAgent);
             }
 
-            var xml = await client.GetStringAsync(provider.XmltvUrl, timeoutCts.Token);
+            var xmltvUrl = SubstituteProviderUrl(provider.XmltvUrl);
+            var xml = await client.GetStringAsync(xmltvUrl, timeoutCts.Token);
             return new XmltvFetchResult(Xml: xml, Bytes: System.Text.Encoding.UTF8.GetByteCount(xml));
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
@@ -156,6 +161,19 @@ public sealed class ProviderFetcher(IHttpClientFactory httpClientFactory, Playli
 
             client.DefaultRequestHeaders.Remove(property.Name);
             client.DefaultRequestHeaders.TryAddWithoutValidation(property.Name, value);
+        }
+    }
+
+    private string SubstituteProviderUrl(string url)
+    {
+        try
+        {
+            return envVarService.SubstituteEnvVars(url);
+        }
+        catch (InvalidOperationException ex)
+        {
+            throw new ProviderFetchException(
+                $"Provider URL contains undefined environment variables: {ex.Message}", ex);
         }
     }
 

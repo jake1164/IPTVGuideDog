@@ -22,6 +22,8 @@ public sealed class ProviderConfiguration : IEntityTypeConfiguration<Provider>
         builder.Property(x => x.TimeoutSeconds).HasColumnName("timeout_seconds").HasDefaultValue(20);
         builder.Property(x => x.CreatedUtc).HasColumnName("created_utc").IsRequired();
         builder.Property(x => x.UpdatedUtc).HasColumnName("updated_utc").IsRequired();
+        builder.Property(x => x.ConfigSourcePath).HasColumnName("config_source_path");
+        builder.Property(x => x.NeedsEnvVarSubstitution).HasColumnName("needs_env_var_substitution").IsRequired();
 
         builder.HasIndex(x => x.Name).IsUnique();
         builder.HasIndex(x => x.Enabled).HasDatabaseName("idx_providers_enabled");

@@ -156,3 +156,29 @@ public sealed class ProviderActiveResponse
     public bool IsActive { get; set; }
     public DateTime UpdatedUtc { get; set; }
 }
+
+public sealed class ConfigYamlProviderDto
+{
+    public string Name { get; set; } = string.Empty;
+    public string PlaylistUrl { get; set; } = string.Empty;
+    public string? XmltvUrl { get; set; }
+    public bool RequiresEnvVars { get; set; }
+    public List<string> MissingEnvVars { get; set; } = [];
+}
+
+public sealed class ImportConfigProviderRequest
+{
+    [Required]
+    public string Name { get; set; } = string.Empty;
+}
+
+public sealed class ProviderHealthDto
+{
+    public string ProviderId { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public bool CanFetch { get; set; }
+    public string Status { get; set; } = string.Empty;
+    public List<string> MissingEnvVars { get; set; } = [];
+    public string? LastError { get; set; }
+    public DateTime? LastSuccessFetch { get; set; }
+}

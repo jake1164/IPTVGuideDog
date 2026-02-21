@@ -90,12 +90,27 @@ The Web UI is intended to make large catalogs manageable.
 Views:
 
 - **Provider**: configure providers, preview catalogs, and manage the active provider
+  - Import providers from config.yaml (read-only, credentials secure)
+  - Add/edit providers directly in the GUI (for testing or one-off providers)
+  - Check provider health (credentials defined, last successful fetch, etc.)
 - **Groups**: browse the provider's groups and channel counts (read-only preview)
 - **Snapshots / Status**: see refresh history and the current active snapshot
 
 Design goals:
 - configuration should be explicit and understandable
 - changes should be visible (what changed, when)
+- credentials should be secure and managed externally via `.env`
+
+### Config.yaml Integration
+
+The service can import provider definitions from the same `config.yaml` file used by the CLI. This allows:
+
+- Single source of truth for provider definitions
+- Secure credential management via `.env` files (credentials never stored in database)
+- Coexistence of CLI and web UI workflows
+- Read-only imports (config.yaml changes must be edited in the YAML, then re-imported)
+
+See: `docs/CONFIG_YAML_INTEGRATION.md`
 
 ---
 

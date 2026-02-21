@@ -93,12 +93,10 @@
                             <MudStack Row="true" Spacing="1">
                                 <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" Size="Size.Small" OnClick="() => BeginEdit(context)" />
                                 <MudIconButton Icon="@(context.Enabled ? Icons.Material.Filled.ToggleOn : Icons.Material.Filled.ToggleOff)" Color="Color.Secondary" Size="Size.Small" OnClick="() => ToggleEnabledAsync(context)" />
-                                <MudIconButton Icon="@(context.IsActive ? Icons.Material.Filled.Star : Icons.Material.Outlined.StarBorder)"
-                                               Color="@(context.IsActive ? Color.Warning : Color.Default)"
-                                               Size="Size.Small"
-                                               Disabled="context.IsActive"
-                                               title="@(context.IsActive ? "Currently active provider" : "Set as active provider")"
-                                               OnClick="() => SetActiveAsync(context)" />
+                                @if (!context.IsActive)
+                                {
+                                    <MudButton Variant="Variant.Outlined" Color="Color.Success" Size="Size.Small" OnClick="() => SetActiveAsync(context)">Set Active</MudButton>
+                                }
                                 <MudButton Variant="Variant.Text" Size="Size.Small" OnClick="() => LoadPreviewAsync(context.ProviderId)">Preview</MudButton>
                                 <MudButton Variant="Variant.Text" Size="Size.Small" OnClick="() => RefreshPreviewAsync(context.ProviderId)">Refresh & Preview</MudButton>
                             </MudStack>
@@ -109,6 +107,58 @@
         </MudPaper>
     </MudItem>
 </MudGrid>
+
+@if (_configProvidersLoaded && _configProviders.Count > 0)
+{
+    <MudPaper Class="pa-4 mt-4" Elevation="1">
+        <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-3">
+            <MudStack Spacing="0">
+                <MudText Typo="Typo.h6">Import from config.yaml</MudText>
+                <MudText Typo="Typo.caption" Color="Color.Secondary">Providers discovered in IPTV_CONFIG_DIR</MudText>
+            </MudStack>
+            <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Refresh" OnClick="LoadConfigProvidersAsync" Disabled="_isConfigLoading">Reload</MudButton>
+        </MudStack>
+
+        @if (_configError is not null)
+        {
+            <MudAlert Severity="Severity.Error" Variant="Variant.Outlined" Class="mb-3">@_configError</MudAlert>
+        }
+
+        <MudTable Items="_configProviders" Hover="true" Dense="true">
+            <HeaderContent>
+                <MudTh>Name</MudTh>
+                <MudTh>Playlist URL</MudTh>
+                <MudTh>Status</MudTh>
+                <MudTh></MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd>@context.Name</MudTd>
+                <MudTd Style="max-width:400px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">@context.PlaylistUrl</MudTd>
+                <MudTd>
+                    @if (context.MissingEnvVars.Count > 0)
+                    {
+                        <MudChip T="string" Size="Size.Small" Color="Color.Error">Missing vars: @string.Join(", ", context.MissingEnvVars)</MudChip>
+                    }
+                    else if (IsAlreadyImported(context.Name))
+                    {
+                        <MudChip T="string" Size="Size.Small" Color="Color.Success">Imported</MudChip>
+                    }
+                    else
+                    {
+                        <MudChip T="string" Size="Size.Small" Color="Color.Default">Ready</MudChip>
+                    }
+                </MudTd>
+                <MudTd>
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small"
+                               Disabled="@(IsAlreadyImported(context.Name) || context.MissingEnvVars.Count > 0 || _importingName == context.Name)"
+                               OnClick="() => ImportConfigProviderAsync(context.Name)">
+                        @(_importingName == context.Name ? "Importing..." : "Import")
+                    </MudButton>
+                </MudTd>
+            </RowTemplate>
+        </MudTable>
+    </MudPaper>
+}
 
 <MudPaper Class="pa-4 mt-4" Elevation="1">
     <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Class="mb-3">
@@ -178,9 +228,15 @@
     private ProviderPreviewDto? _preview;
     private string? _error;
 
+    private readonly List<ConfigYamlProviderDto> _configProviders = [];
+    private bool _isConfigLoading;
+    private bool _configProvidersLoaded;
+    private string? _configError;
+    private string? _importingName;
+
     protected override async Task OnInitializedAsync()
     {
-        await LoadAsync();
+        await Task.WhenAll(LoadAsync(), LoadConfigProvidersAsync());
     }
 
     private async Task LoadAsync()
@@ -363,6 +419,57 @@
             _error = $"Failed to set provider active: {ex.Message}";
         }
     }
+
+    private async Task LoadConfigProvidersAsync()
+    {
+        _isConfigLoading = true;
+        _configError = null;
+
+        try
+        {
+            var result = await Http.GetFromJsonAsync<List<ConfigYamlProviderDto>>("/api/v1/providers/config/available");
+            _configProviders.Clear();
+            _configProviders.AddRange(result ?? []);
+            _configProvidersLoaded = true;
+        }
+        catch (Exception ex)
+        {
+            _configError = $"Failed to load config.yaml providers: {ex.Message}";
+        }
+        finally
+        {
+            _isConfigLoading = false;
+        }
+    }
+
+    private async Task ImportConfigProviderAsync(string name)
+    {
+        _configError = null;
+        _importingName = name;
+
+        try
+        {
+            var response = await Http.PostAsJsonAsync("/api/v1/providers/config/import", new ImportConfigProviderRequest { Name = name });
+            if (!response.IsSuccessStatusCode)
+            {
+                _configError = await ReadErrorAsync(response);
+                return;
+            }
+
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            _configError = $"Failed to import provider: {ex.Message}";
+        }
+        finally
+        {
+            _importingName = null;
+        }
+    }
+
+    private bool IsAlreadyImported(string name) =>
+        _providers.Any(p => p.Name == name);
 
     private async Task LoadPreviewAsync(string providerId)
     {

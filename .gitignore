@@ -87,3 +87,6 @@ test-output/
 # Publish output directories
 publish/
 !publish/.gitkeep
+
+.DS_Store
+.ai_docs/
